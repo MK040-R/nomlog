@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Primitive color tokens ───────────────────────────────────────────────── */
+
+  /* Tomato (primary / calorie ring / FABs) */
+  --color-tomato-500: #FF4E33;
+  --color-tomato-600: #E83A20;
+  --color-tomato-700: #C12C15;
+
+  /* Mustard (secondary / carbs) */
+  --color-mustard-500: #FFB627;
+
+  /* Plum (deep dark surfaces) */
+  --color-plum-400: #934A7E;
+  --color-plum-700: #3D1838;
+  --color-plum-800: #2A0F26;
+
+  /* Neutral / cream scale */
+  --color-n-0: #FFFFFF;
+  --color-n-50: #FFFBF5;
+  --color-n-100: #FBF3E9;
+  --color-n-200: #F4E8DA;
+  --color-n-300: #E7D6C3;
+  --color-n-500: #9C8676;
+  --color-n-800: #2E2228;
+  --color-n-900: #1F1620;
+
+  /* Avocado (fiber macro) */
+  --color-avocado-500: #5DAE52;
+
+  /* ── Semantic color aliases ───────────────────────────────────────────────── */
+  --color-primary: var(--color-tomato-500);
+  --color-primary-hover: var(--color-tomato-600);
+  --color-primary-press: var(--color-tomato-700);
+  --color-secondary: var(--color-mustard-500);
+
+  --color-surface-page: var(--color-n-50);
+  --color-surface-card: var(--color-n-0);
+  --color-surface-sunken: var(--color-n-100);
+
+  --color-border-subtle: var(--color-n-200);
+  --color-border-default: var(--color-n-300);
+
+  --color-text-muted: var(--color-n-500);
+  --color-text-body: var(--color-n-800);
+  --color-text-strong: var(--color-n-900);
+
+  /* ── Macro colors ─────────────────────────────────────────────────────────── */
+  --color-macro-protein: var(--color-tomato-500);
+  --color-macro-carbs: var(--color-mustard-500);
+  --color-macro-fat: var(--color-plum-400);
+  --color-macro-fiber: var(--color-avocado-500);
+
+  /* ── Typography ───────────────────────────────────────────────────────────── */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+
+  /* ── Border radius ────────────────────────────────────────────────────────── */
+  --radius-card: 18px;
+  --radius-card-lg: 20px;
+  --radius-button: 999px;
+  --radius-input: 12px;
+
+  /* ── Animation easings ────────────────────────────────────────────────────── */
+  --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Animation durations ─────────────────────────────────────────────────── */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── Shadows ──────────────────────────────────────────────────────────────── */
+  --shadow-primary: 0 10px 26px rgba(255, 78, 51, 0.30);
+  --shadow-card: 0 4px 24px rgba(42, 15, 38, 0.10);
+}
+
+/* ── Base styles ────────────────────────────────────────────────────────────── */
+html {
+  font-family: var(--font-sans);
+  background-color: var(--color-surface-page);
+  color: var(--color-text-body);
+}
+
+/* ── Utility classes ────────────────────────────────────────────────────────── */
+
+/* All numbers and data values use Roboto Mono with tabular figures */
+.nom-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section labels / eyebrow text */
+.nom-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

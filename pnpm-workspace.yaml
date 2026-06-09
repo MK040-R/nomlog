@@ -1,0 +1,8 @@
+allowBuilds:
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false
+minimumReleaseAgeExclude:
+  - '@supabase/ssr@0.12.0'
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
