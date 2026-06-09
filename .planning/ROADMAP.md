@@ -12,7 +12,7 @@ NomLog ships bottom-up, following hard dependency order. Auth and database schem
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Google OAuth, Supabase schema + RLS, session middleware, Gemini key guard
+- [x] **Phase 1: Foundation** - Google OAuth, Supabase schema + RLS, session middleware, Gemini key guard (completed 2026-06-09)
 - [ ] **Phase 2: LLM Core** - Gemini parse + reestimate API routes validated against 20+ Indian food inputs
 - [ ] **Phase 3: Log Flow** - Complete speak → parse → correct → save loop; voice input, correction panel, meal save
 - [ ] **Phase 4: Dashboard + History** - Today's dashboard, yesterday view, post-save editing, goal settings
@@ -106,7 +106,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/2 | In Progress|  |
+| 1. Foundation | 2/2 | Complete   | 2026-06-09 |
 | 2. LLM Core | 0/2 | Not started | - |
 | 3. Log Flow | 0/3 | Not started | - |
 | 4. Dashboard + History | 0/2 | Not started | - |

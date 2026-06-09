@@ -7,9 +7,9 @@
 
 ### Authentication (AUTH)
 
-- [ ] **AUTH-01**: User can sign in with their Google account via OAuth — no email/password option exists
-- [ ] **AUTH-02**: User session persists across browser closes without requiring re-login
-- [ ] **AUTH-03**: User can sign out explicitly from their profile screen
+- [x] **AUTH-01**: User can sign in with their Google account via OAuth — no email/password option exists
+- [x] **AUTH-02**: User session persists across browser closes without requiring re-login
+- [x] **AUTH-03**: User can sign out explicitly from their profile screen
 - [x] **AUTH-04**: Two different Google accounts have completely separate data with no cross-visibility
 - [x] **AUTH-05**: Supabase Row-Level Security (RLS) policies enforce per-user data isolation at the database level; verified with two separate test accounts before any second real user is added
 
@@ -109,9 +109,9 @@ Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
 | GOAL-01 | Phase 3 | Pending |
