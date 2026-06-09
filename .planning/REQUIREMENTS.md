@@ -114,36 +114,36 @@ Populated during roadmap creation.
 | AUTH-03 | Phase 1 | Pending |
 | AUTH-04 | Phase 1 | Pending |
 | AUTH-05 | Phase 1 | Pending |
-| GOAL-01 | TBD | Pending |
-| GOAL-02 | TBD | Pending |
-| GOAL-03 | TBD | Pending |
-| INPUT-01 | TBD | Pending |
-| INPUT-02 | TBD | Pending |
-| INPUT-03 | TBD | Pending |
-| INPUT-04 | TBD | Pending |
-| LLM-01 | TBD | Pending |
-| LLM-02 | TBD | Pending |
-| LLM-03 | TBD | Pending |
-| LLM-04 | TBD | Pending |
-| LLM-05 | TBD | Pending |
-| CORR-01 | TBD | Pending |
-| CORR-02 | TBD | Pending |
-| CORR-03 | TBD | Pending |
-| CORR-04 | TBD | Pending |
-| CORR-05 | TBD | Pending |
-| CORR-06 | TBD | Pending |
-| LOG-01 | TBD | Pending |
-| LOG-02 | TBD | Pending |
-| LOG-03 | TBD | Pending |
-| DASH-01 | TBD | Pending |
-| DASH-02 | TBD | Pending |
-| DASH-03 | TBD | Pending |
-| ANLT-01 | TBD | Pending |
+| GOAL-01 | Phase 3 | Pending |
+| GOAL-02 | Phase 3 | Pending |
+| GOAL-03 | Phase 4 | Pending |
+| INPUT-01 | Phase 3 | Pending |
+| INPUT-02 | Phase 3 | Pending |
+| INPUT-03 | Phase 3 | Pending |
+| INPUT-04 | Phase 3 | Pending |
+| LLM-01 | Phase 2 | Pending |
+| LLM-02 | Phase 2 | Pending |
+| LLM-03 | Phase 2 | Pending |
+| LLM-04 | Phase 2 | Pending |
+| LLM-05 | Phase 2 | Pending |
+| CORR-01 | Phase 3 | Pending |
+| CORR-02 | Phase 3 | Pending |
+| CORR-03 | Phase 3 | Pending |
+| CORR-04 | Phase 3 | Pending |
+| CORR-05 | Phase 3 | Pending |
+| CORR-06 | Phase 3 | Pending |
+| LOG-01 | Phase 3 | Pending |
+| LOG-02 | Phase 3 | Pending |
+| LOG-03 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| ANLT-01 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 5 (AUTH)
-- Unmapped: 25 ⚠ (will be resolved by roadmapper)
+- Mapped to phases: 30 ✓
+- Unmapped: 0 ✓
 
 ---
 
