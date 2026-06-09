@@ -1,0 +1,75 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  public: {
+    Tables: {
+      meal_logs: {
+        Row: {
+          id: string
+          user_id: string
+          logged_at: string
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          raw_input: string | null
+          food_items: Json
+          total_calories: number
+          total_protein_g: number
+          total_carbs_g: number
+          total_fat_g: number
+          total_fiber_g: number
+          confidence: 'high' | 'medium' | 'low' | null
+          input_source: 'voice' | 'text' | null
+          edited: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          logged_at?: string
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          raw_input?: string | null
+          food_items?: Json
+          total_calories?: number
+          total_protein_g?: number
+          total_carbs_g?: number
+          total_fat_g?: number
+          total_fiber_g?: number
+          confidence?: 'high' | 'medium' | 'low' | null
+          input_source?: 'voice' | 'text' | null
+          edited?: boolean
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['meal_logs']['Insert']>
+      }
+      user_profiles: {
+        Row: {
+          id: string
+          created_at: string
+          goal_calories: number | null
+          goal_protein_g: number | null
+          goal_carbs_g: number | null
+          goal_fat_g: number | null
+          goal_fiber_g: number | null
+        }
+        Insert: {
+          id: string
+          created_at?: string
+          goal_calories?: number | null
+          goal_protein_g?: number | null
+          goal_carbs_g?: number | null
+          goal_fat_g?: number | null
+          goal_fiber_g?: number | null
+        }
+        Update: Partial<Database['public']['Tables']['user_profiles']['Insert']>
+      }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+  }
+}
