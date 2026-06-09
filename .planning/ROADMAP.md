@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can tap sign out and be returned to the login screen with their session cleared
   4. Logging in with a second Google account shows zero data from the first account — both in the UI and confirmed by direct Supabase query
   5. Gemini API key is absent from the compiled client bundle — `grep -r "GEMINI_API_KEY" .next/static/` returns empty after every build
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 01-01: Supabase project setup — schema, RLS policies, server/client factories, OAuth provider config
@@ -46,7 +46,7 @@ Plans:
   3. Sending a Hinglish input ("aaj lunch mein dal chawal khaya, ek katori dal aur ek plate rice") returns a correctly parsed structured result
   4. A malformed Gemini response triggers up to 2 automatic retries; after retries are exhausted the user's original raw input text is preserved for re-submission
   5. `/api/reestimate-item` called with a modified item name and the original meal context returns updated nutrition numbers for that item only
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 02-01: Gemini client setup — system prompt with Indian food unit grounding, Zod schemas, `/api/parse-food` route with retry logic
@@ -63,7 +63,7 @@ Plans:
   4. User can add a new food item to the correction panel or delete an existing item before saving
   5. User can tap Save, and the entry appears in the database with all nutrition fields stored — including meal type, raw input, confidence, and input source
   6. Low-confidence LLM estimates show a visible indicator in the correction panel header with the message "This estimate is rough — tap any item to adjust"
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 03-01: LogFlow FSM + VoiceInput component (Web Speech API, `lang: 'en-IN'`, mic permission handling, iOS Safari gesture chain)
@@ -79,7 +79,7 @@ Plans:
   2. User can tap any logged meal on the dashboard to reopen the correction panel, edit it, and save — the entry shows an "edited" label and an undo toast appears for 5 seconds
   3. User can tap "Yesterday" from the dashboard in one tap and see the same layout (calorie total, macro breakdown, meal list with edit icons) for the previous day
   4. User can navigate to Goals settings and change any daily target; the new goal is reflected immediately on the dashboard without altering any historical data
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 04-01: Dashboard page — DailySummary + MealList components, SWR key convention, `/api/meals` GET, `/api/goals` GET
@@ -94,7 +94,7 @@ Plans:
   2. The weekly view shows average protein, carbs, fat, and fiber for the week alongside the goal values for each macro
   3. Any macro averaging more than 20% above or below the daily goal across the week shows a plain-language flag (e.g., "Your protein average was 40% below your goal this week")
   4. The weekly view shows how many days out of the past 7 had at least one logged meal
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 - [ ] 05-01: Analytics page — Recharts BarChart + ReferenceLine, macro averages, rule-based flag logic, logged day count, `/api/analytics/weekly` GET
