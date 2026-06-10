@@ -77,14 +77,14 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ### ASK — assistant grounded in user's data
 
-- [ ] **ASK-01**: An "Ask" surface (own tab/entry). Named "Ask"/"Coach" — never "Chat"
-- [ ] **ASK-02**: Free-text input always available; user can type any question
-- [ ] **ASK-03**: 3–4 suggested prompt chips alongside input (e.g. "What can I eat now?", "How's my week?", "Suggest a dinner"); tapping submits
-- [ ] **ASK-04**: Answers grounded in user's own data (compact summary of goals + today's intake + recent meals/weights); must not fabricate logged data
-- [ ] **ASK-05**: Rolling context window (~2–3 exchanges) so follow-ups work; older turns drop off to keep cost flat
-- [ ] **ASK-06**: Fresh session on leaving/returning — no long persisted chat history
-- [ ] **ASK-07**: Answers render as design-system answer cards, not a bubble thread
-- [ ] **ASK-08**: Reuses model fallback + honest "busy" messaging
+- [x] **ASK-01**: An "Ask" surface (own tab/entry). Named "Ask"/"Coach" — never "Chat"
+- [x] **ASK-02**: Free-text input always available; user can type any question
+- [x] **ASK-03**: 3–4 suggested prompt chips alongside input (e.g. "What can I eat now?", "How's my week?", "Suggest a dinner"); tapping submits
+- [x] **ASK-04**: Answers grounded in user's own data (compact summary of goals + today's intake + recent meals/weights); must not fabricate logged data
+- [x] **ASK-05**: Rolling context window (~2–3 exchanges) so follow-ups work; older turns drop off to keep cost flat
+- [x] **ASK-06**: Fresh session on leaving/returning — no long persisted chat history
+- [x] **ASK-07**: Answers render as design-system answer cards, not a bubble thread
+- [x] **ASK-08**: Reuses model fallback + honest "busy" messaging
 
 ### TIPS — daily nudge
 
@@ -100,8 +100,8 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ### RECAP — weekly narrative
 
-- [ ] **RCAP-01**: Short warm paragraph on the past 7 days (days logged, goal hits, weakest macro, encouragement) on Insights
-- [ ] **RCAP-02**: Generated once/week, cached
+- [x] **RCAP-01**: Short warm paragraph on the past 7 days (days logged, goal hits, weakest macro, encouragement) on Insights
+- [x] **RCAP-02**: Generated once/week, cached
 
 ### ANLT — analytics interactivity (owner request 2026-06-10)
 
@@ -116,14 +116,14 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ### QLOG — quick re-log (zero-cost, low priority)
 
-- [ ] **QLOG-01**: One-tap re-log of a frequent/recent meal, no AI call
+- [x] **QLOG-01**: One-tap re-log of a frequent/recent meal, no AI call
 
 ### Cross-cutting (NFR)
 
-- [ ] **NFR-01**: All AI features server-side only; Gemini key never reaches client
-- [ ] **NFR-02**: Cost discipline — tips/recap cached, Ask rolling window, what-fits on-demand only
-- [ ] **NFR-03**: Only the signed-in user's RLS-scoped data
-- [ ] **NFR-04**: Design-system compliant
+- [x] **NFR-01**: All AI features server-side only; Gemini key never reaches client
+- [x] **NFR-02**: Cost discipline — tips/recap cached, Ask rolling window, what-fits on-demand only
+- [x] **NFR-03**: Only the signed-in user's RLS-scoped data
+- [x] **NFR-04**: Design-system compliant
 
 **Suggested build order:** (1) TIP + FIT, (2) ANLT-02..05 (bar tap + calendar), (3) ASK, (4) RCAP, (5) QLOG.
 
@@ -162,4 +162,4 @@ Explicitly excluded. Documented to prevent scope creep.
 ---
 
 *Requirements defined: 2026-06-09*
-*Last updated: 2026-06-10 — TIP, FIT and ANLT-02..05 shipped (tips, what-fits + one-tap log, tappable bars, monthly calendar). Pending owner step: apply supabase/migrations/0004_daily_tips.sql so tips cache once/day. Remaining v1.1: ASK, RCAP, QLOG.*
+*Last updated: 2026-06-10 — ALL v1.1 requirements shipped (TIP, FIT, ANLT-02..05, ASK, RCAP, QLOG). Pending owner step: apply migrations 0004_daily_tips.sql and 0005_weekly_recaps.sql so tips/recaps cache instead of regenerating per visit.*
