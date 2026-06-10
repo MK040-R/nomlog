@@ -59,7 +59,7 @@
   /* ── Typography ───────────────────────────────────────────────────────────── */
   --font-display: 'Space Grotesk', sans-serif;
   --font-sans: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
+  --font-mono: 'Inter', system-ui, sans-serif;
 
   /* ── Border radius ────────────────────────────────────────────────────────── */
   --radius-card: 18px;

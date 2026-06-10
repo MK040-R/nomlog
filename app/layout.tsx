@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Plus_Jakarta_Sans, Roboto_Mono } from 'next/font/google'
+import { Space_Grotesk, Plus_Jakarta_Sans, Inter } from 'next/font/google'
 import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({
@@ -16,9 +16,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-const robotoMono = Roboto_Mono({
+// Numbers/data font. Inter has a clean (unslashed) zero and tabular figures.
+const dataFont = Inter({
   subsets: ['latin'],
-  weight: ['400', '500'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-mono',
   display: 'swap',
 })
@@ -36,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${plusJakartaSans.variable} ${robotoMono.variable}`}
+      className={`${spaceGrotesk.variable} ${plusJakartaSans.variable} ${dataFont.variable}`}
     >
       <body>{children}</body>
     </html>
