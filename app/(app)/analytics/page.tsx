@@ -1,6 +1,8 @@
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   lastNDays,
   istDayRange,
@@ -13,16 +15,36 @@ import type { FoodItem } from '@/types/app.types'
 
 type DayTotals = { cal: number; p: number; c: number; f: number; fib: number; count: number }
 
-export default async function AnalyticsPage() {
+/** Shift a YYYY-MM by n months. */
+function shiftMonth(ym: string, n: number) {
+  const [y, m] = ym.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7)
+}
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>
+}) {
   const user = await verifySession()
   if (!user) redirect('/login')
 
+  const { month: monthParam } = await searchParams
   const supabase = await createClient()
   const days = lastNDays(7)
   const { startIso } = istDayRange(days[0])
   const { endIso } = istDayRange(days[6])
 
-  const [{ data: meals }, { data: profile }] = await Promise.all([
+  // Month view: defaults to the current IST month, never navigates past it.
+  const curMonth = istToday().slice(0, 7)
+  const month =
+    monthParam && /^\d{4}-\d{2}$/.test(monthParam) && monthParam <= curMonth ? monthParam : curMonth
+  const [mYear, mMon] = month.split('-').map(Number)
+  const daysInMonth = new Date(Date.UTC(mYear, mMon, 0)).getUTCDate()
+  const monthStartIso = istDayRange(`${month}-01`).startIso
+  const monthEndIso = istDayRange(`${month}-${String(daysInMonth).padStart(2, '0')}`).endIso
+
+  const [{ data: meals }, { data: profile }, { data: monthMeals }] = await Promise.all([
     supabase
       .from('meal_logs')
       .select('*')
@@ -30,6 +52,11 @@ export default async function AnalyticsPage() {
       .lt('logged_at', endIso)
       .order('logged_at', { ascending: true }),
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase
+      .from('meal_logs')
+      .select('logged_at, total_calories')
+      .gte('logged_at', monthStartIso)
+      .lt('logged_at', monthEndIso),
   ])
 
   const rows = meals ?? []
@@ -88,6 +115,22 @@ export default async function AnalyticsPage() {
 
   const today = istToday()
 
+  // Month calendar: calories per IST day
+  const calByDay: Record<string, number> = {}
+  for (const m of monthMeals ?? []) {
+    const d = istYmdOf(m.logged_at)
+    calByDay[d] = (calByDay[d] ?? 0) + m.total_calories
+  }
+  const firstDow = (new Date(month + '-01T00:00:00Z').getUTCDay() + 6) % 7 // Monday = 0
+  const monthLabel = new Date(month + '-01T00:00:00Z').toLocaleDateString('en-IN', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+  const prevMonthHref = `/analytics?month=${shiftMonth(month, -1)}`
+  const nextMonth = shiftMonth(month, 1)
+  const nextMonthHref = nextMonth <= curMonth ? `/analytics?month=${nextMonth}` : null
+
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
       {/* Top bar */}
@@ -123,8 +166,15 @@ export default async function AnalyticsPage() {
                 const h = Math.round((t.cal / scale) * chartH)
                 const over = t.cal > goalCals
                 const isToday = d === today
+                // The whole column is the tap target — bars alone are too thin.
                 return (
-                  <div key={d} className="flex flex-1 flex-col items-center justify-end gap-1.5" style={{ height: chartH }}>
+                  <Link
+                    key={d}
+                    href={`/dashboard?date=${d}`}
+                    aria-label={`Open ${d}`}
+                    className="flex flex-1 flex-col items-center justify-end gap-1.5 transition-opacity active:opacity-60"
+                    style={{ height: chartH }}
+                  >
                     {t.cal > 0 && <span className="num text-[9px] text-muted-foreground">{t.cal}</span>}
                     <div
                       className="w-full rounded-t-sm"
@@ -134,7 +184,7 @@ export default async function AnalyticsPage() {
                         opacity: isToday ? 1 : 0.5,
                       }}
                     />
-                  </div>
+                  </Link>
                 )
               })}
             </div>
@@ -188,7 +238,103 @@ export default async function AnalyticsPage() {
           )}
         </>
       )}
+
+      <div className="divider my-7" />
+
+      {/* Monthly calendar — red over goal, green near goal, yellow well under */}
+      <section>
+        <div className="flex items-center justify-between">
+          <span className="eyebrow">By month</span>
+          <div className="flex items-center gap-3">
+            <Link
+              href={prevMonthHref}
+              aria-label="Previous month"
+              className="text-muted-foreground transition-opacity hover:opacity-70"
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+            </Link>
+            <span className="text-[13px] font-medium text-foreground">{monthLabel}</span>
+            {nextMonthHref ? (
+              <Link
+                href={nextMonthHref}
+                aria-label="Next month"
+                className="text-muted-foreground transition-opacity hover:opacity-70"
+              >
+                <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+              </Link>
+            ) : (
+              <ChevronRight className="h-4 w-4 text-border" strokeWidth={1.5} />
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-7 gap-y-1">
+          {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => (
+            <span key={`h${i}`} className="text-center text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+              {w}
+            </span>
+          ))}
+          {Array.from({ length: firstDow }).map((_, i) => (
+            <span key={`b${i}`} />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const dayN = i + 1
+            const ymd = `${month}-${String(dayN).padStart(2, '0')}`
+            if (ymd > today) {
+              return (
+                <span key={ymd} className="flex h-10 items-center justify-center text-[11px] text-border">
+                  {dayN}
+                </span>
+              )
+            }
+            const color = dayMarkerColor(calByDay[ymd], goalCals)
+            return (
+              <Link
+                key={ymd}
+                href={`/dashboard?date=${ymd}`}
+                aria-label={`Open ${ymd}`}
+                className="flex h-10 items-center justify-center transition-opacity active:opacity-60"
+              >
+                <span
+                  className="num flex h-8 w-8 items-center justify-center rounded-full text-[11px]"
+                  style={
+                    color
+                      ? { backgroundColor: color, color: 'var(--color-primary-foreground)', fontWeight: 500 }
+                      : { color: 'var(--color-muted-foreground)' }
+                  }
+                >
+                  {dayN}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center gap-4 text-[10px] text-muted-foreground">
+          <LegendDot color="var(--color-success)" label="near goal" />
+          <LegendDot color="var(--color-warning)" label="light day" />
+          <LegendDot color="var(--color-destructive)" label="over goal" />
+        </div>
+      </section>
     </main>
+  )
+}
+
+/** Marker color for a calendar day: red >110% of goal, green 90-110%, yellow under, none when empty. */
+function dayMarkerColor(cal: number | undefined, goal: number) {
+  if (!cal) return null
+  const r = cal / goal
+  if (r > 1.1) return 'var(--color-destructive)'
+  if (r >= 0.9) return 'var(--color-success)'
+  return 'var(--color-warning)'
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+      {label}
+    </span>
   )
 }
 
