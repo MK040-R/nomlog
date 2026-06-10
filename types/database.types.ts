@@ -51,6 +51,10 @@ export type Database = {
         Row: {
           id: string
           created_at: string
+          name: string | null
+          age: number | null
+          weight_kg: number | null
+          height_cm: number | null
           goal_calories: number | null
           goal_protein_g: number | null
           goal_carbs_g: number | null
@@ -60,6 +64,10 @@ export type Database = {
         Insert: {
           id: string
           created_at?: string
+          name?: string | null
+          age?: number | null
+          weight_kg?: number | null
+          height_cm?: number | null
           goal_calories?: number | null
           goal_protein_g?: number | null
           goal_carbs_g?: number | null

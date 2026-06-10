@@ -3,15 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { SignOutButton } from '@/components/SignOutButton'
+import { ProfileForm } from '@/components/ProfileForm'
 import { DEFAULT_GOALS } from '@/lib/nutrition'
-
-const FIELDS = [
-  { key: 'goal_calories', label: 'Daily calories', unit: 'kcal' },
-  { key: 'goal_protein_g', label: 'Protein', unit: 'g' },
-  { key: 'goal_carbs_g', label: 'Carbs', unit: 'g' },
-  { key: 'goal_fat_g', label: 'Fat', unit: 'g' },
-  { key: 'goal_fiber_g', label: 'Fiber', unit: 'g' },
-] as const
 
 export default async function ProfilePage() {
   const user = await verifySession()
@@ -24,27 +17,44 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .maybeSingle()
 
-  const values: Record<string, number> = {
-    goal_calories: profile?.goal_calories ?? DEFAULT_GOALS.goal_calories,
-    goal_protein_g: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
-    goal_carbs_g: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
-    goal_fat_g: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
-    goal_fiber_g: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
+  const str = (v: number | string | null | undefined) => (v === null || v === undefined ? '' : String(v))
+
+  const initial = {
+    name: str(profile?.name),
+    age: str(profile?.age),
+    weight_kg: str(profile?.weight_kg),
+    height_cm: str(profile?.height_cm),
+    goal_calories: str(profile?.goal_calories ?? DEFAULT_GOALS.goal_calories),
+    goal_protein_g: str(profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g),
+    goal_carbs_g: str(profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g),
+    goal_fat_g: str(profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g),
+    goal_fiber_g: str(profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g),
   }
 
-  async function saveGoals(formData: FormData) {
+  async function saveProfile(formData: FormData) {
     'use server'
     const u = await verifySession()
     if (!u) redirect('/login')
 
     const num = (k: string) => {
-      const v = Number(formData.get(k))
+      const raw = formData.get(k)
+      if (raw === null || String(raw).trim() === '') return null
+      const v = Number(raw)
       return Number.isFinite(v) && v >= 0 ? v : null
+    }
+    const text = (k: string) => {
+      const raw = formData.get(k)
+      const v = raw === null ? '' : String(raw).trim()
+      return v === '' ? null : v
     }
 
     const sb = await createClient()
     await sb.from('user_profiles').upsert({
       id: u.id,
+      name: text('name'),
+      age: num('age'),
+      weight_kg: num('weight_kg'),
+      height_cm: num('height_cm'),
       goal_calories: num('goal_calories'),
       goal_protein_g: num('goal_protein_g'),
       goal_carbs_g: num('goal_carbs_g'),
@@ -61,41 +71,15 @@ export default async function ProfilePage() {
       <header className="flex items-center justify-between">
         <div>
           <p className="nom-eyebrow text-text-muted">You</p>
-          <h1 className="font-display text-2xl font-bold text-text-strong">Your goals</h1>
+          <h1 className="font-display text-2xl font-bold text-text-strong">
+            {profile?.name ? profile.name : 'Your profile'}
+          </h1>
+          <p className="mt-0.5 text-xs text-text-muted">{user.email}</p>
         </div>
         <SignOutButton />
       </header>
 
-      <p className="text-sm text-text-muted">
-        Signed in as <span className="font-medium text-text-body">{user.email}</span>
-      </p>
-
-      <form action={saveGoals} className="flex flex-col gap-3 rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-        {FIELDS.map((f) => (
-          <label key={f.key} className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-text-body">{f.label}</span>
-            <span className="flex items-center gap-2">
-              <input
-                name={f.key}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                defaultValue={values[f.key]}
-                className="nom-data w-24 rounded-input border border-border-default bg-surface-page px-3 py-2 text-right text-sm text-text-strong outline-none focus:border-primary"
-              />
-              <span className="w-8 text-xs text-text-muted">{f.unit}</span>
-            </span>
-          </label>
-        ))}
-
-        <button type="submit" className="google-signin-btn mt-2">
-          Save goals
-        </button>
-      </form>
-
-      <p className="px-1 text-xs text-text-muted">
-        These targets drive the rings and bars on your dashboard and insights.
-      </p>
+      <ProfileForm initial={initial} action={saveProfile} />
     </main>
   )
 }

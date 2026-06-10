@@ -58,6 +58,7 @@ export default async function DashboardPage({
   )
 
   const remaining = goals.calories - consumed.calories
+  const displayName = profile?.name?.trim() || firstName(user.email)
   const dateLabel = new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -75,7 +76,7 @@ export default async function DashboardPage({
         <div>
           <p className="nom-eyebrow text-text-muted">{isToday ? 'Today' : dateLabel}</p>
           <h1 className="font-display text-2xl font-bold text-text-strong">
-            {isToday ? `${greeting()}, ${firstName(user.email)} 👋` : 'Looking back'}
+            {isToday ? `${greeting()}, ${displayName} 👋` : 'Looking back'}
           </h1>
         </div>
         <div className="flex items-center gap-1">
@@ -100,20 +101,24 @@ export default async function DashboardPage({
         </div>
       </header>
 
-      {/* Calorie summary */}
-      <section className="flex items-center gap-5 rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
+      {/* Calorie hero */}
+      <section
+        className="flex items-center gap-6 overflow-hidden rounded-[28px] p-6 text-[#FFFBF5]"
+        style={{
+          background: 'linear-gradient(140deg, var(--color-plum-700) 0%, var(--color-plum-800) 100%)',
+          boxShadow: '0 14px 32px rgba(42, 15, 38, 0.28)',
+        }}
+      >
         <CalorieRing consumed={consumed.calories} goal={goals.calories} />
         <div className="flex flex-col">
-          <span className="nom-data text-3xl font-bold text-text-strong">
-            {consumed.calories}
-            <span className="ml-1 text-sm font-medium text-text-muted">/ {goals.calories} kcal</span>
+          <span className="nom-eyebrow text-[#FFFBF5]/55">
+            {remaining >= 0 ? 'Remaining' : 'Over by'}
           </span>
-          <span className="mt-1 text-sm text-text-muted">
-            {remaining >= 0 ? (
-              <><span className="nom-data font-semibold text-[color:var(--color-success,#469A3D)]">{remaining}</span> kcal left</>
-            ) : (
-              <><span className="nom-data font-semibold text-primary">{Math.abs(remaining)}</span> kcal over</>
-            )}
+          <span className="nom-data text-4xl font-bold leading-none">
+            {Math.abs(remaining)}
+          </span>
+          <span className="mt-1.5 text-sm text-[#FFFBF5]/70">
+            {consumed.calories} of {goals.calories} kcal
           </span>
         </div>
       </section>
@@ -140,10 +145,10 @@ export default async function DashboardPage({
           rows.map((m) => {
             const foods = (m.food_items as unknown as FoodItem[]) ?? []
             return (
-              <div key={m.id} className="rounded-card border border-border-subtle bg-surface-card p-4 shadow-card">
+              <div key={m.id} className="rounded-card border border-border-subtle bg-surface-card p-4 shadow-card transition hover:-translate-y-0.5">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="flex items-center gap-2 text-sm font-semibold capitalize text-text-strong">
-                    <span>{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
+                    <span className="text-base">{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="nom-data text-sm font-bold text-primary">{m.total_calories} kcal</span>
@@ -194,28 +199,35 @@ function MacroTile({ label, value, goal, color }: { label: string; value: number
 }
 
 function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
-  const size = 88
-  const stroke = 9
+  const size = 116
+  const stroke = 11
   const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
   const pct = Math.min(1, goal > 0 ? consumed / goal : 0)
   const over = consumed > goal
   const dash = circ * pct
-  const color = over ? 'var(--color-danger, #E5392B)' : 'var(--color-primary)'
+  // On the plum hero, tomato reads "on track"; mustard flags going over (both pop on plum).
+  const color = over ? 'var(--color-mustard-500)' : 'var(--color-tomato-500)'
 
   return (
-    <svg width={size} height={size} className="shrink-0 -rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-surface-sunken)" strokeWidth={stroke} />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${circ}`}
-      />
-    </svg>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="nom-data text-2xl font-bold text-[#FFFBF5]">{consumed}</span>
+        <span className="text-[10px] uppercase tracking-wider text-[#FFFBF5]/55">kcal</span>
+      </div>
+    </div>
   )
 }
