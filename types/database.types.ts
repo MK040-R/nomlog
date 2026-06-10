@@ -45,6 +45,7 @@ export type Database = {
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['meal_logs']['Insert']>
+        Relationships: []
       }
       user_profiles: {
         Row: {
@@ -66,10 +67,12 @@ export type Database = {
           goal_fiber_g?: number | null
         }
         Update: Partial<Database['public']['Tables']['user_profiles']['Insert']>
+        Relationships: []
       }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

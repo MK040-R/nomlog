@@ -22,6 +22,7 @@
   --color-n-100: #FBF3E9;
   --color-n-200: #F4E8DA;
   --color-n-300: #E7D6C3;
+  --color-n-400: #C9B4A3;
   --color-n-500: #9C8676;
   --color-n-800: #2E2228;
   --color-n-900: #1F1620;
@@ -43,8 +44,11 @@
   --color-border-default: var(--color-n-300);
 
   --color-text-muted: var(--color-n-500);
+  --color-text-subtle: var(--color-n-400);
   --color-text-body: var(--color-n-800);
   --color-text-strong: var(--color-n-900);
+  --color-success: #469A3D;
+  --color-danger: #E5392B;
 
   /* ── Macro colors ─────────────────────────────────────────────────────────── */
   --color-macro-protein: var(--color-tomato-500);

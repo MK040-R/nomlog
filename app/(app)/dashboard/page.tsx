@@ -1,34 +1,193 @@
 import { verifySession } from '@/lib/dal'
-import { SignOutButton } from '@/components/SignOutButton'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { SignOutButton } from '@/components/SignOutButton'
+import { LogMeal } from '@/components/LogMeal'
+import { DeleteMealButton } from '@/components/DeleteMealButton'
+import { istDayRange, DEFAULT_GOALS } from '@/lib/nutrition'
+import type { FoodItem, MealType } from '@/types/app.types'
+
+const MEAL_EMOJI: Record<MealType, string> = {
+  breakfast: '🍳',
+  lunch: '🍛',
+  dinner: '🌙',
+  snack: '🍌',
+}
 
 export default async function DashboardPage() {
   const user = await verifySession()
-
   if (!user) redirect('/login')
 
+  const supabase = await createClient()
+  const { startIso, endIso } = istDayRange()
+
+  const [{ data: meals }, { data: profile }] = await Promise.all([
+    supabase
+      .from('meal_logs')
+      .select('*')
+      .gte('logged_at', startIso)
+      .lt('logged_at', endIso)
+      .order('logged_at', { ascending: true }),
+    supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
+  ])
+
+  const rows = meals ?? []
+  const goals = {
+    calories: profile?.goal_calories ?? DEFAULT_GOALS.goal_calories,
+    protein: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
+    carbs: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
+    fat: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
+    fiber: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
+  }
+
+  const consumed = rows.reduce(
+    (a, m) => ({
+      calories: a.calories + m.total_calories,
+      protein: a.protein + Number(m.total_protein_g),
+      carbs: a.carbs + Number(m.total_carbs_g),
+      fat: a.fat + Number(m.total_fat_g),
+      fiber: a.fiber + Number(m.total_fiber_g),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+  )
+
+  const remaining = goals.calories - consumed.calories
+  const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-8">
-      <h1
-        style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontWeight: 700,
-          fontSize: '24px',
-          color: '#1F1620',
-        }}
-      >
-        Dashboard
-      </h1>
-      <p
-        style={{
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
-          fontSize: '14px',
-          color: '#6F5A4D',
-        }}
-      >
-        Signed in as {user.email}
-      </p>
-      <SignOutButton />
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 bg-surface-page px-4 py-6">
+      {/* Header */}
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="nom-eyebrow text-text-muted">{today}</p>
+          <h1 className="font-display text-2xl font-bold text-text-strong">
+            {greeting()}, {firstName(user.email)} 👋
+          </h1>
+        </div>
+        <SignOutButton />
+      </header>
+
+      {/* Calorie summary */}
+      <section className="flex items-center gap-5 rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
+        <CalorieRing consumed={consumed.calories} goal={goals.calories} />
+        <div className="flex flex-col">
+          <span className="nom-data text-3xl font-bold text-text-strong">
+            {consumed.calories}
+            <span className="ml-1 text-sm font-medium text-text-muted">/ {goals.calories} kcal</span>
+          </span>
+          <span className="mt-1 text-sm text-text-muted">
+            {remaining >= 0 ? (
+              <><span className="nom-data font-semibold text-[color:var(--color-success,#469A3D)]">{remaining}</span> kcal left</>
+            ) : (
+              <><span className="nom-data font-semibold text-primary">{Math.abs(remaining)}</span> kcal over</>
+            )}
+          </span>
+        </div>
+      </section>
+
+      {/* Macros */}
+      <section className="grid grid-cols-4 gap-2">
+        <MacroTile label="Protein" value={consumed.protein} goal={goals.protein} color="var(--color-macro-protein)" />
+        <MacroTile label="Carbs" value={consumed.carbs} goal={goals.carbs} color="var(--color-macro-carbs)" />
+        <MacroTile label="Fat" value={consumed.fat} goal={goals.fat} color="var(--color-macro-fat)" />
+        <MacroTile label="Fiber" value={consumed.fiber} goal={goals.fiber} color="var(--color-macro-fiber)" />
+      </section>
+
+      {/* Log a meal */}
+      <LogMeal />
+
+      {/* Today's meals */}
+      <section className="flex flex-col gap-3">
+        <h2 className="nom-eyebrow text-text-muted">Today&apos;s meals</h2>
+        {rows.length === 0 ? (
+          <p className="rounded-card border border-dashed border-border-default bg-surface-card px-4 py-8 text-center text-sm text-text-muted">
+            Nothing logged yet. Tell me what you ate above. ☝️
+          </p>
+        ) : (
+          rows.map((m) => {
+            const foods = (m.food_items as unknown as FoodItem[]) ?? []
+            return (
+              <div key={m.id} className="rounded-card border border-border-subtle bg-surface-card p-4 shadow-card">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-semibold capitalize text-text-strong">
+                    <span>{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="nom-data text-sm font-bold text-primary">{m.total_calories} kcal</span>
+                    <DeleteMealButton id={m.id} />
+                  </div>
+                </div>
+                <ul className="flex flex-col gap-0.5">
+                  {foods.map((f, i) => (
+                    <li key={i} className="flex justify-between text-sm text-text-body">
+                      <span>{f.name} <span className="text-text-subtle">· {f.portion}</span></span>
+                      <span className="nom-data text-text-muted">{Math.round(f.calories_kcal)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })
+        )}
+      </section>
     </main>
+  )
+}
+
+function greeting() {
+  const h = new Date(Date.now() + 5.5 * 60 * 60 * 1000).getUTCHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function firstName(email?: string) {
+  if (!email) return 'there'
+  const name = email.split('@')[0].replace(/[._0-9]/g, ' ').trim().split(' ')[0]
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+function MacroTile({ label, value, goal, color }: { label: string; value: number; goal: number; color: string }) {
+  const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
+  return (
+    <div className="flex flex-col items-center rounded-input border border-border-subtle bg-surface-card p-2 shadow-card">
+      <span className="nom-data text-base font-bold text-text-strong">{Math.round(value)}</span>
+      <span className="nom-eyebrow mt-0.5 text-[9px] text-text-muted">{label}</span>
+      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-surface-sunken">
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  )
+}
+
+function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
+  const size = 88
+  const stroke = 9
+  const r = (size - stroke) / 2
+  const circ = 2 * Math.PI * r
+  const pct = Math.min(1, goal > 0 ? consumed / goal : 0)
+  const over = consumed > goal
+  const dash = circ * pct
+  const color = over ? 'var(--color-danger, #E5392B)' : 'var(--color-primary)'
+
+  return (
+    <svg width={size} height={size} className="shrink-0 -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-surface-sunken)" strokeWidth={stroke} />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+      />
+    </svg>
   )
 }
