@@ -19,6 +19,7 @@ export default async function DashboardPage({
   const { date: dateParam } = await searchParams
   const supabase = await createClient()
   const { startIso, endIso, ymd } = istDayRange(dateParam)
+  if (ymd > istToday()) redirect('/dashboard')
   const isToday = ymd === istToday()
 
   const [{ data: meals }, { data: profile }] = await Promise.all([

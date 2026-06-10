@@ -55,21 +55,17 @@ export default async function ProfilePage() {
     'use server'
     const u = await verifySession()
     if (!u) redirect('/login')
-    const num = (k: string) => {
-      const raw = formData.get(k)
-      if (raw === null || String(raw).trim() === '') return null
-      const v = Number(raw)
-      return Number.isFinite(v) && v >= 0 ? v : null
+    // Only write fields with a usable positive number. An emptied or garbage
+    // field keeps its previous value instead of silently nulling the goal.
+    const patch: Record<string, number> = {}
+    for (const k of ['goal_calories', 'goal_protein_g', 'goal_carbs_g', 'goal_fat_g', 'goal_fiber_g']) {
+      const v = Number(formData.get(k))
+      if (Number.isFinite(v) && v >= 1) patch[k] = v
     }
-    const sb = await createClient()
-    await sb.from('user_profiles').upsert({
-      id: u.id,
-      goal_calories: num('goal_calories'),
-      goal_protein_g: num('goal_protein_g'),
-      goal_carbs_g: num('goal_carbs_g'),
-      goal_fat_g: num('goal_fat_g'),
-      goal_fiber_g: num('goal_fiber_g'),
-    })
+    if (Object.keys(patch).length > 0) {
+      const sb = await createClient()
+      await sb.from('user_profiles').upsert({ id: u.id, ...patch } as never)
+    }
     revalidatePath('/dashboard')
     revalidatePath('/profile')
   }
