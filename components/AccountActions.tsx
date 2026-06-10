@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { LogOut, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export function AccountActions() {
@@ -40,37 +41,37 @@ export function AccountActions() {
     <div className="flex flex-col">
       <button
         onClick={signOut}
-        className="flex items-center gap-3 py-3 text-sm font-medium text-text-body transition active:scale-[0.98]"
+        className="flex items-center gap-3 py-2 text-[13px] text-foreground transition-opacity hover:opacity-70"
       >
-        <span className="text-lg">⎋</span> Sign out
+        <LogOut className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} /> Sign out
       </button>
 
       {!confirming ? (
         <button
           onClick={() => setConfirming(true)}
-          className="flex items-center gap-3 py-3 text-sm font-medium text-danger transition active:scale-[0.98]"
+          className="flex items-center gap-3 py-2 text-[13px] text-destructive transition-opacity hover:opacity-70"
         >
-          <span className="text-lg">🗑</span> Delete account
+          <Trash2 className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} /> Delete account
         </button>
       ) : (
         <div className="flex flex-col gap-2 py-2">
-          <p className="text-sm text-text-body">
-            This permanently deletes your account and all your meals and weights. This can&apos;t be undone.
+          <p className="text-[13px] text-muted-foreground">
+            This permanently deletes your account and all your meals and weights. It can&apos;t be undone.
           </p>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex gap-3">
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+          <div className="mt-1 flex gap-2">
             <button
               onClick={() => setConfirming(false)}
               disabled={deleting}
-              className="flex-1 rounded-button border border-border-default bg-surface-card py-2.5 text-sm font-semibold text-text-body"
+              className="h-7 rounded-full px-3 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
             >
               Keep my account
             </button>
             <button
               onClick={deleteAccount}
               disabled={deleting}
-              className="flex-1 rounded-button py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: 'var(--color-danger)' }}
+              className="h-7 rounded-full px-3 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-70 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-destructive)' }}
             >
               {deleting ? 'Deleting…' : 'Delete forever'}
             </button>

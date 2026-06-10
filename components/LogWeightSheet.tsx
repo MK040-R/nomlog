@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 
 type Props = {
   currentWeight: number | null
@@ -56,9 +57,9 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1 text-sm font-semibold text-primary transition active:scale-95"
+        className="flex items-center gap-1 text-[11px] font-medium text-primary transition-opacity hover:opacity-70"
       >
-        <span className="text-base leading-none">+</span> Log
+        <Plus className="h-3 w-3" strokeWidth={2.5} /> Log
       </button>
 
       {open && (
@@ -66,13 +67,13 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
           <button
             aria-label="Close"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-[rgba(42,15,38,0.35)] backdrop-blur-sm"
+            className="absolute inset-0 bg-[oklch(0.24_0.025_40_/_0.35)] backdrop-blur-sm"
           />
-          <div className="relative w-full max-w-[390px] rounded-t-[28px] bg-surface-card p-6 pb-8 shadow-card">
-            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-border-default" />
-            <h2 className="font-display text-xl font-bold text-text-strong">Log today&apos;s weight</h2>
+          <div className="relative w-full max-w-[420px] rounded-t-3xl bg-card px-6 pb-8 pt-5">
+            <div className="mx-auto mb-6 h-1 w-10 rounded-full bg-border" />
+            <span className="eyebrow">Log today&apos;s weight</span>
 
-            <div className="mt-5 flex items-end gap-2">
+            <div className="mt-4 flex items-end gap-2">
               <input
                 autoFocus
                 type="number"
@@ -81,67 +82,54 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 placeholder="0.0"
-                className="nom-data w-full border-b-2 border-border-default bg-transparent pb-2 text-4xl font-bold text-text-strong outline-none focus:border-primary"
+                className="num field flex-1 text-[38px] font-medium text-foreground"
               />
-              <span className="pb-2 text-lg text-text-muted">kg</span>
+              <span className="pb-2 text-[15px] text-muted-foreground">kg</span>
             </div>
 
             <button
               onClick={() => setShowDetails((s) => !s)}
-              className="mt-4 text-xs font-medium text-text-muted hover:text-primary"
+              className="mt-4 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
             >
               {showDetails ? 'Hide other details' : 'Edit name, age & height'}
             </button>
 
             {showDetails && (
-              <div className="mt-3 flex flex-col gap-3">
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-text-muted">Name</span>
+              <div className="mt-4 flex flex-col gap-4">
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-[13px] text-muted-foreground">Name</span>
+                  <input value={nm} onChange={(e) => setNm(e.target.value)} className="field w-40 text-right" />
+                </label>
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-[13px] text-muted-foreground">Age</span>
                   <input
-                    value={nm}
-                    onChange={(e) => setNm(e.target.value)}
-                    className="rounded-input border border-border-default bg-surface-page px-3 py-2 text-sm text-text-strong outline-none focus:border-primary"
+                    type="number"
+                    inputMode="numeric"
+                    value={ag}
+                    onChange={(e) => setAg(e.target.value)}
+                    className="num field w-20 text-right text-[15px]"
                   />
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-text-muted">Age</span>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={ag}
-                      onChange={(e) => setAg(e.target.value)}
-                      className="nom-data rounded-input border border-border-default bg-surface-page px-3 py-2 text-sm text-text-strong outline-none focus:border-primary"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1">
-                    <span className="text-xs font-medium text-text-muted">Height (cm)</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={ht}
-                      onChange={(e) => setHt(e.target.value)}
-                      className="nom-data rounded-input border border-border-default bg-surface-page px-3 py-2 text-sm text-text-strong outline-none focus:border-primary"
-                    />
-                  </label>
-                </div>
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-[13px] text-muted-foreground">Height (cm)</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={ht}
+                    onChange={(e) => setHt(e.target.value)}
+                    className="num field w-20 text-right text-[15px]"
+                  />
+                </label>
               </div>
             )}
 
-            {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+            {error && <p className="mt-3 text-[13px] text-destructive">{error}</p>}
 
             <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setOpen(false)}
-                className="flex-1 rounded-button border border-border-default bg-surface-card py-3 text-sm font-semibold text-text-body transition active:scale-[0.97]"
-              >
+              <button onClick={() => setOpen(false)} className="btn-ghost flex-1">
                 Cancel
               </button>
-              <button
-                onClick={save}
-                disabled={saving}
-                className="google-signin-btn flex-1 disabled:opacity-60"
-              >
+              <button onClick={save} disabled={saving} className="btn-primary flex-1">
                 {saving ? 'Saving…' : 'Save'}
               </button>
             </div>

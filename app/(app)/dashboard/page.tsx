@@ -2,6 +2,7 @@ import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { LogMeal } from '@/components/LogMeal'
 import { DeleteMealButton } from '@/components/DeleteMealButton'
 import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
@@ -58,11 +59,13 @@ export default async function DashboardPage({
   )
 
   const remaining = goals.calories - consumed.calories
+  const pct = Math.min(100, Math.round((consumed.calories / goals.calories) * 100)) || 0
+  const over = consumed.calories > goals.calories
   const displayName = profile?.name?.trim() || firstName(user.email)
   const dateLabel = new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-IN', {
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     timeZone: 'UTC',
   })
   const prevHref = `/dashboard?date=${shiftYmd(ymd, -1)}`
@@ -70,105 +73,129 @@ export default async function DashboardPage({
   const nextHref = nextDay > istToday() ? null : `/dashboard?date=${nextDay}`
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
-      {/* Header */}
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="nom-eyebrow text-text-muted">{isToday ? 'Today' : dateLabel}</p>
-          <h1 className="font-display text-2xl font-bold text-text-strong">
-            {isToday ? `${greeting()}, ${displayName} 👋` : 'Looking back'}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1">
-          <Link
-            href={prevHref}
-            aria-label="Previous day"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-text-body transition active:scale-95"
-          >
-            ‹
+    <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
+      {/* Top bar */}
+      <div className="flex items-center justify-between">
+        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
+        <div className="flex items-center gap-3">
+          <Link href={prevHref} aria-label="Previous day" className="text-muted-foreground transition-opacity hover:opacity-70">
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
           </Link>
+          <span className="eyebrow">{isToday ? 'Today' : dateLabel}</span>
           {nextHref ? (
-            <Link
-              href={nextHref}
-              aria-label="Next day"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-text-body transition active:scale-95"
-            >
-              ›
+            <Link href={nextHref} aria-label="Next day" className="text-muted-foreground transition-opacity hover:opacity-70">
+              <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
             </Link>
           ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border-subtle text-text-subtle">›</span>
+            <ChevronRight className="h-4 w-4 text-border" strokeWidth={1.5} />
           )}
         </div>
-      </header>
+      </div>
 
-      {/* Calorie hero */}
-      <section
-        className="flex items-center gap-6 overflow-hidden rounded-[28px] p-6 text-[#FFFBF5]"
-        style={{
-          background: 'linear-gradient(140deg, var(--color-plum-700) 0%, var(--color-plum-800) 100%)',
-          boxShadow: '0 14px 32px rgba(42, 15, 38, 0.28)',
-        }}
-      >
-        <CalorieRing consumed={consumed.calories} goal={goals.calories} />
-        <div className="flex flex-col">
-          <span className="nom-eyebrow text-[#FFFBF5]/55">
-            {remaining >= 0 ? 'Remaining' : 'Over by'}
+      {/* Greeting */}
+      <h1 className="mt-8 font-display text-[22px] font-medium leading-tight text-foreground">
+        {isToday ? `${greeting()}, ${displayName}` : 'Looking back'}
+      </h1>
+
+      <div className="divider my-7" />
+
+      {/* Calories */}
+      <section>
+        <span className="eyebrow">Calories</span>
+        <div className="mt-3 flex items-end justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="num text-[38px] font-medium leading-none text-foreground">{consumed.calories}</span>
+            <span className="text-[13px] text-muted-foreground">/ {goals.calories} kcal</span>
+          </div>
+          <span
+            className="num text-[13px]"
+            style={{ color: over ? 'var(--color-destructive)' : 'var(--color-success)' }}
+          >
+            {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
           </span>
-          <span className="nom-data text-4xl font-bold leading-none">
-            {Math.abs(remaining)}
-          </span>
-          <span className="mt-1.5 text-sm text-[#FFFBF5]/70">
-            {consumed.calories} of {goals.calories} kcal
-          </span>
+        </div>
+        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${pct}%`, backgroundColor: over ? 'var(--color-destructive)' : 'var(--color-primary)' }}
+          />
         </div>
       </section>
 
+      <div className="divider my-7" />
+
       {/* Macros */}
-      <section className="grid grid-cols-4 gap-2">
-        <MacroTile label="Protein" value={consumed.protein} goal={goals.protein} color="var(--color-macro-protein)" />
-        <MacroTile label="Carbs" value={consumed.carbs} goal={goals.carbs} color="var(--color-macro-carbs)" />
-        <MacroTile label="Fat" value={consumed.fat} goal={goals.fat} color="var(--color-macro-fat)" />
-        <MacroTile label="Fiber" value={consumed.fiber} goal={goals.fiber} color="var(--color-macro-fiber)" />
+      <section className="flex items-start justify-between">
+        <Macro label="Protein" value={consumed.protein} goal={goals.protein} />
+        <Macro label="Carbs" value={consumed.carbs} goal={goals.carbs} />
+        <Macro label="Fat" value={consumed.fat} goal={goals.fat} />
+        <Macro label="Fiber" value={consumed.fiber} goal={goals.fiber} />
       </section>
 
-      {/* Log a meal (only on today) */}
-      {isToday && <LogMeal />}
+      {isToday && (
+        <>
+          <div className="divider my-7" />
+          <section>
+            <span className="eyebrow">Log a meal</span>
+            <div className="mt-4">
+              <LogMeal />
+            </div>
+          </section>
+        </>
+      )}
+
+      <div className="divider my-7" />
 
       {/* Meals */}
-      <section className="flex flex-col gap-3">
-        <h2 className="nom-eyebrow text-text-muted">{isToday ? "Today's meals" : 'Meals'}</h2>
+      <section>
+        <span className="eyebrow">{isToday ? "Today's meals" : 'Meals'}</span>
         {rows.length === 0 ? (
-          <p className="rounded-card border border-dashed border-border-default bg-surface-card px-4 py-8 text-center text-sm text-text-muted">
-            {isToday ? 'Nothing logged yet. Tell me what you ate above. ☝️' : 'Nothing was logged this day.'}
+          <p className="mt-4 text-[13px] text-muted-foreground">
+            {isToday ? 'Nothing logged yet. Tell me what you ate above.' : 'Nothing was logged this day.'}
           </p>
         ) : (
-          rows.map((m) => {
-            const foods = (m.food_items as unknown as FoodItem[]) ?? []
-            return (
-              <div key={m.id} className="rounded-card border border-border-subtle bg-surface-card p-4 shadow-card transition hover:-translate-y-0.5">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-semibold capitalize text-text-strong">
-                    <span className="text-base">{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <span className="nom-data text-sm font-bold text-primary">{m.total_calories} kcal</span>
-                    <DeleteMealButton id={m.id} />
+          <div className="mt-4 flex flex-col">
+            {rows.map((m, idx) => {
+              const foods = (m.food_items as unknown as FoodItem[]) ?? []
+              return (
+                <div key={m.id} className={idx > 0 ? 'border-t border-border/60 pt-4 mt-4' : ''}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-[13px] font-medium capitalize text-foreground">
+                      <span>{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="num text-[13px] text-foreground">{m.total_calories} kcal</span>
+                      <DeleteMealButton id={m.id} />
+                    </div>
                   </div>
+                  <ul className="flex flex-col gap-0.5">
+                    {foods.map((f, i) => (
+                      <li key={i} className="flex justify-between text-[13px] text-muted-foreground">
+                        <span>{f.name} · {f.portion}</span>
+                        <span className="num">{Math.round(f.calories_kcal)}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="flex flex-col gap-0.5">
-                  {foods.map((f, i) => (
-                    <li key={i} className="flex justify-between text-sm text-text-body">
-                      <span>{f.name} <span className="text-text-subtle">· {f.portion}</span></span>
-                      <span className="nom-data text-text-muted">{Math.round(f.calories_kcal)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )
-          })
+              )
+            })}
+          </div>
         )}
       </section>
     </main>
+  )
+}
+
+function Macro({ label, value, goal }: { label: string; value: number; goal: number }) {
+  const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
+  return (
+    <div className="flex w-[22%] flex-col">
+      <span className="num text-[20px] font-medium leading-none text-foreground">{Math.round(value)}</span>
+      <span className="eyebrow mt-1.5">{label}</span>
+      <div className="mt-2 h-px w-full bg-muted">
+        <div className="h-full bg-foreground/30" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   )
 }
 
@@ -183,51 +210,4 @@ function firstName(email?: string) {
   if (!email) return 'there'
   const name = email.split('@')[0].replace(/[._0-9]/g, ' ').trim().split(' ')[0]
   return name.charAt(0).toUpperCase() + name.slice(1)
-}
-
-function MacroTile({ label, value, goal, color }: { label: string; value: number; goal: number; color: string }) {
-  const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
-  return (
-    <div className="flex flex-col items-center rounded-input border border-border-subtle bg-surface-card p-2 shadow-card">
-      <span className="nom-data text-base font-bold text-text-strong">{Math.round(value)}</span>
-      <span className="nom-eyebrow mt-0.5 text-[9px] text-text-muted">{label}</span>
-      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-surface-sunken">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  )
-}
-
-function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
-  const size = 116
-  const stroke = 11
-  const r = (size - stroke) / 2
-  const circ = 2 * Math.PI * r
-  const pct = Math.min(1, goal > 0 ? consumed / goal : 0)
-  const over = consumed > goal
-  const dash = circ * pct
-  // On the plum hero, tomato reads "on track"; mustard flags going over (both pop on plum).
-  const color = over ? 'var(--color-mustard-500)' : 'var(--color-tomato-500)'
-
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circ}`}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="nom-data text-2xl font-bold text-[#FFFBF5]">{consumed}</span>
-        <span className="text-[10px] uppercase tracking-wider text-[#FFFBF5]/55">kcal</span>
-      </div>
-    </div>
-  )
 }

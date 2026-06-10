@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Mic, Square, X } from 'lucide-react'
 import type { FoodItem, MealType } from '@/types/app.types'
 
 type Parsed = {
@@ -35,11 +36,9 @@ export function LogMeal() {
   const [rawInput, setRawInput] = useState('')
   const [edited, setEdited] = useState(false)
 
-  // "add more" within the confirmation card
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
 
-  // voice
   const recognitionRef = useRef<any>(null)
   const manualStopRef = useRef(false)
   const committedRef = useRef('')
@@ -132,7 +131,6 @@ export function LogMeal() {
     setItems((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  // ---- Voice: listen continuously until the user taps stop ----
   function startVoice() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) {
@@ -161,7 +159,6 @@ export function LogMeal() {
     }
 
     rec.onerror = (e: any) => {
-      // "no-speech" / "aborted" are normal during pauses — keep going unless it's fatal.
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
         setError('Microphone permission was blocked.')
         manualStopRef.current = true
@@ -175,7 +172,6 @@ export function LogMeal() {
         const t = transcriptRef.current.trim()
         if (t) parse(t)
       } else {
-        // Browser auto-stopped on a pause — restart so the user can keep talking.
         try {
           rec.start()
         } catch {
@@ -207,62 +203,56 @@ export function LogMeal() {
   // ---- Confirming / saving ----
   if (status === 'confirming' || status === 'saving') {
     return (
-      <div className="rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-        <div className="mb-3 flex items-center justify-between">
-          <span className="nom-eyebrow text-text-muted">Check the estimate</span>
+      <div>
+        <div className="flex items-center justify-between">
+          <select
+            value={mealType}
+            onChange={(e) => setMealType(e.target.value as MealType)}
+            className="field w-auto pr-6 text-[13px] font-medium capitalize"
+          >
+            {MEAL_TYPES.map((m) => (
+              <option key={m} value={m} className="capitalize">{m}</option>
+            ))}
+          </select>
           {confidence !== 'high' && (
-            <span className="text-xs text-text-muted">Rough — tap any number to fix it</span>
+            <span className="text-[11px] text-muted-foreground">Rough — tap a number to fix it</span>
           )}
         </div>
 
-        <select
-          value={mealType}
-          onChange={(e) => setMealType(e.target.value as MealType)}
-          className="mb-4 rounded-input border border-border-default bg-surface-page px-3 py-2 text-sm font-medium capitalize text-text-strong"
-        >
-          {MEAL_TYPES.map((m) => (
-            <option key={m} value={m} className="capitalize">{m}</option>
-          ))}
-        </select>
-
-        <div className="flex flex-col gap-3">
+        <div className="mt-4 flex flex-col">
           {items.map((it, i) => (
-            <div key={i} className="rounded-input border border-border-subtle bg-surface-page p-3">
+            <div key={i} className={i > 0 ? 'border-t border-border/60 pt-3 mt-3' : ''}>
               <div className="mb-2 flex items-center gap-2">
                 <input
                   value={it.name}
                   onChange={(e) => updateItem(i, 'name', e.target.value)}
-                  className="flex-1 bg-transparent font-display text-base font-semibold text-text-strong outline-none"
+                  className="flex-1 bg-transparent font-display text-[15px] font-medium text-foreground outline-none"
                 />
-                <button
-                  onClick={() => removeItem(i)}
-                  className="text-text-subtle hover:text-primary"
-                  aria-label="Remove item"
-                >
-                  ✕
+                <button onClick={() => removeItem(i)} className="text-muted-foreground transition-opacity hover:opacity-70" aria-label="Remove item">
+                  <X className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </button>
               </div>
               <input
                 value={it.portion}
                 onChange={(e) => updateItem(i, 'portion', e.target.value)}
-                className="mb-3 w-full bg-transparent text-sm text-text-muted outline-none"
+                className="mb-3 w-full bg-transparent text-[13px] text-muted-foreground outline-none"
               />
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-3">
                 {([
                   ['calories_kcal', 'kcal'],
-                  ['protein_g', 'protein'],
-                  ['carbs_g', 'carbs'],
-                  ['fat_g', 'fat'],
-                  ['fiber_g', 'fiber'],
+                  ['protein_g', 'P'],
+                  ['carbs_g', 'C'],
+                  ['fat_g', 'F'],
+                  ['fiber_g', 'Fi'],
                 ] as [keyof FoodItem, string][]).map(([field, label]) => (
                   <label key={field} className="flex flex-col">
-                    <span className="nom-eyebrow mb-1 text-[9px] text-text-subtle">{label}</span>
+                    <span className="eyebrow mb-1 text-[9px]">{label}</span>
                     <input
                       type="number"
                       inputMode="decimal"
                       value={it[field] as number}
                       onChange={(e) => updateItem(i, field, e.target.value)}
-                      className="nom-data w-full rounded-md border border-border-subtle bg-surface-card px-1.5 py-1 text-sm text-text-strong outline-none focus:border-primary"
+                      className="num field text-[14px]"
                     />
                   </label>
                 ))}
@@ -271,8 +261,8 @@ export function LogMeal() {
           ))}
         </div>
 
-        {/* Add more to this same meal */}
-        <div className="mt-3 flex gap-2">
+        {/* Add more */}
+        <div className="mt-4 flex items-end gap-2">
           <input
             value={addText}
             onChange={(e) => setAddText(e.target.value)}
@@ -281,12 +271,12 @@ export function LogMeal() {
             }}
             placeholder="add more… e.g. 2 rotis"
             disabled={adding}
-            className="flex-1 rounded-input border border-border-default bg-surface-page px-3 py-2 text-sm text-text-strong outline-none placeholder:text-text-subtle focus:border-primary"
+            className="field flex-1"
           />
           <button
             onClick={() => addMore(addText)}
             disabled={adding || !addText.trim()}
-            className="rounded-button border border-border-default bg-surface-card px-4 text-sm font-semibold text-text-body transition active:scale-95 disabled:opacity-50"
+            className="h-7 rounded-full px-3 text-[11px] font-medium text-primary transition-opacity hover:opacity-70 disabled:opacity-40"
           >
             {adding ? '…' : 'Add'}
           </button>
@@ -296,34 +286,26 @@ export function LogMeal() {
             setEdited(true)
             setItems((prev) => [...prev, { ...BLANK }])
           }}
-          className="mt-2 text-xs font-medium text-text-muted hover:text-primary"
+          className="mt-2 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
         >
           + add an item by hand
         </button>
 
-        <div className="mt-4 flex items-center justify-between rounded-input bg-surface-sunken px-4 py-3">
-          <span className="text-sm font-medium text-text-body">Total</span>
-          <span className="nom-data text-lg font-bold text-primary">{Math.round(totals.kcal)} kcal</span>
+        <div className="mt-5 flex items-baseline justify-between">
+          <span className="eyebrow">Total</span>
+          <span className="num text-[22px] font-medium text-foreground">{Math.round(totals.kcal)} kcal</span>
         </div>
-        <p className="nom-data mt-2 text-center text-xs text-text-muted">
-          P {totals.p.toFixed(0)}g · C {totals.c.toFixed(0)}g · F {totals.f.toFixed(0)}g · Fiber {totals.fib.toFixed(0)}g
+        <p className="num mt-1 text-right text-[11px] text-muted-foreground">
+          P {totals.p.toFixed(0)} · C {totals.c.toFixed(0)} · F {totals.f.toFixed(0)} · Fi {totals.fib.toFixed(0)}
         </p>
 
-        {error && <p className="mt-3 text-center text-sm text-danger">{error}</p>}
+        {error && <p className="mt-3 text-[13px] text-destructive">{error}</p>}
 
-        <div className="mt-4 flex gap-3">
-          <button
-            onClick={reset}
-            disabled={status === 'saving'}
-            className="flex-1 rounded-button border border-border-default bg-surface-card py-3 text-sm font-semibold text-text-body transition active:scale-[0.97] disabled:opacity-50"
-          >
+        <div className="mt-5 flex gap-3">
+          <button onClick={reset} disabled={status === 'saving'} className="btn-ghost flex-1">
             Cancel
           </button>
-          <button
-            onClick={save}
-            disabled={status === 'saving' || items.length === 0}
-            className="google-signin-btn flex-1 disabled:opacity-60"
-          >
+          <button onClick={save} disabled={status === 'saving' || items.length === 0} className="btn-primary flex-1">
             {status === 'saving' ? 'Saving…' : 'Save meal'}
           </button>
         </div>
@@ -333,8 +315,7 @@ export function LogMeal() {
 
   // ---- Idle / parsing ----
   return (
-    <div className="rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-      <label className="nom-eyebrow mb-2 block text-text-muted">What&apos;d you eat? 🍴</label>
+    <div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -344,29 +325,27 @@ export function LogMeal() {
         placeholder="two rotis, dal, a bowl of curd…"
         rows={2}
         disabled={status === 'parsing'}
-        className="w-full resize-none rounded-input border border-border-default bg-surface-page px-4 py-3 text-base text-text-strong outline-none placeholder:text-text-subtle focus:border-primary"
+        className="field resize-none text-[15px]"
       />
 
-      {listening && (
-        <p className="mt-2 text-sm font-medium text-primary">Listening… tap ⏹ when you&apos;re done.</p>
-      )}
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
+      {listening && <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>}
+      {error && <p className="mt-2 text-[13px] text-destructive">{error}</p>}
 
-      <div className="mt-3 flex gap-3">
+      <div className="mt-3 flex items-center gap-3">
         <button
           onClick={() => (listening ? stopVoice() : startVoice())}
           disabled={status === 'parsing'}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-xl transition active:scale-95 ${
-            listening ? 'border-primary bg-primary text-white' : 'border-border-default bg-surface-card text-text-body'
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
+            listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
           }`}
           aria-label={listening ? 'Stop listening' : 'Speak your meal'}
         >
-          {listening ? '⏹' : '🎤'}
+          {listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-4 w-4" strokeWidth={1.5} />}
         </button>
         <button
           onClick={() => parse(text)}
           disabled={status === 'parsing' || !text.trim() || listening}
-          className="google-signin-btn flex-1 disabled:opacity-50"
+          className="btn-primary flex-1"
         >
           {status === 'parsing' ? 'Reading…' : 'Log it'}
         </button>

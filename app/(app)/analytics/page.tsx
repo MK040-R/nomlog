@@ -89,28 +89,33 @@ export default async function AnalyticsPage() {
   const today = istToday()
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
-      <header>
-        <p className="nom-eyebrow text-text-muted">Last 7 days</p>
-        <h1 className="font-display text-2xl font-bold text-text-strong">How it&apos;s adding up</h1>
-      </header>
+    <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
+      {/* Top bar */}
+      <div className="mb-10 flex items-center justify-between">
+        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
+        <span className="eyebrow">Insights</span>
+      </div>
+
+      <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">How it&apos;s adding up</h1>
+      <p className="mt-1 text-[13px] text-muted-foreground">Last 7 days</p>
 
       {loggedDays.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border-default bg-surface-card px-4 py-10 text-center text-sm text-text-muted">
-          No meals logged this week yet. Once you start logging, your trends show up here. 📈
+        <p className="mt-8 text-[13px] text-muted-foreground">
+          No meals logged this week yet. Once you start logging, your trends show up here.
         </p>
       ) : (
         <>
+          <div className="divider my-7" />
+
           {/* Calorie bar chart */}
-          <section className="rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-            <div className="mb-3 flex items-baseline justify-between">
-              <span className="nom-eyebrow text-text-muted">Calories / day</span>
-              <span className="text-xs text-text-muted">goal {goalCals}</span>
+          <section>
+            <div className="flex items-baseline justify-between">
+              <span className="eyebrow">Calories / day</span>
+              <span className="num text-[11px] text-muted-foreground">goal {goalCals}</span>
             </div>
-            <div className="relative flex items-end justify-between gap-2" style={{ height: chartH }}>
-              {/* goal line */}
+            <div className="relative mt-4 flex items-end justify-between gap-2" style={{ height: chartH }}>
               <div
-                className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border-strong"
+                className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border"
                 style={{ bottom: goalY }}
               />
               {days.map((d) => {
@@ -119,60 +124,67 @@ export default async function AnalyticsPage() {
                 const over = t.cal > goalCals
                 const isToday = d === today
                 return (
-                  <div key={d} className="flex flex-1 flex-col items-center justify-end gap-1" style={{ height: chartH }}>
-                    {t.cal > 0 && <span className="nom-data text-[9px] text-text-muted">{t.cal}</span>}
+                  <div key={d} className="flex flex-1 flex-col items-center justify-end gap-1.5" style={{ height: chartH }}>
+                    {t.cal > 0 && <span className="num text-[9px] text-muted-foreground">{t.cal}</span>}
                     <div
-                      className="w-full rounded-t-md"
+                      className="w-full rounded-t-sm"
                       style={{
-                        height: Math.max(h, t.cal > 0 ? 4 : 0),
-                        backgroundColor: over ? 'var(--color-danger)' : 'var(--color-primary)',
-                        opacity: isToday ? 1 : 0.85,
+                        height: Math.max(h, t.cal > 0 ? 3 : 0),
+                        backgroundColor: over ? 'var(--color-destructive)' : 'var(--color-primary)',
+                        opacity: isToday ? 1 : 0.5,
                       }}
                     />
                   </div>
                 )
               })}
             </div>
-            <div className="mt-1.5 flex justify-between gap-2">
+            <div className="mt-2 flex justify-between gap-2">
               {days.map((d) => (
-                <span key={d} className="flex-1 text-center text-[10px] text-text-muted">
+                <span key={d} className="flex-1 text-center text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
                   {weekdayShort(d).slice(0, 1)}
                 </span>
               ))}
             </div>
           </section>
 
+          <div className="divider my-7" />
+
           {/* Headline stats */}
-          <section className="grid grid-cols-3 gap-2">
-            <Stat label="Avg / day" value={`${avgCal}`} unit="kcal" />
-            <Stat label="Days logged" value={`${loggedDays.length}`} unit="of 7" />
-            <Stat label="Streak" value={`${streak}`} unit={streak === 1 ? 'day' : 'days'} />
+          <section className="flex items-start justify-between">
+            <Stat label="Avg / day" value={`${avgCal}`} />
+            <Stat label="Days logged" value={`${loggedDays.length}`} accent />
+            <Stat label="Streak" value={`${streak}`} />
           </section>
 
+          <div className="divider my-7" />
+
           {/* Avg macros */}
-          <section className="rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-            <span className="nom-eyebrow text-text-muted">Average macros / day</span>
-            <div className="mt-3 flex flex-col gap-3">
-              <MacroRow label="Protein" value={avgP} goal={goals.protein} color="var(--color-macro-protein)" />
-              <MacroRow label="Carbs" value={avgC} goal={goals.carbs} color="var(--color-macro-carbs)" />
-              <MacroRow label="Fat" value={avgF} goal={goals.fat} color="var(--color-macro-fat)" />
-              <MacroRow label="Fiber" value={avgFib} goal={goals.fiber} color="var(--color-macro-fiber)" />
+          <section>
+            <span className="eyebrow">Average macros / day</span>
+            <div className="mt-4 flex flex-col gap-3">
+              <MacroRow label="Protein" value={avgP} goal={goals.protein} />
+              <MacroRow label="Carbs" value={avgC} goal={goals.carbs} />
+              <MacroRow label="Fat" value={avgF} goal={goals.fat} />
+              <MacroRow label="Fiber" value={avgFib} goal={goals.fiber} />
             </div>
           </section>
 
           {/* Most eaten */}
           {topFoods.length > 0 && (
-            <section className="rounded-card border border-border-subtle bg-surface-card p-5 shadow-card">
-              <span className="nom-eyebrow text-text-muted">Most eaten this week</span>
-              <ul className="mt-3 flex flex-col gap-2">
-                {topFoods.map(([name, count]) => (
-                  <li key={name} className="flex items-center justify-between text-sm text-text-body">
-                    <span>{name}</span>
-                    <span className="nom-data text-text-muted">×{count}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <>
+              <div className="divider my-7" />
+              <section>
+                <span className="eyebrow">Most eaten this week</span>
+                <ul className="mt-4 flex flex-col gap-2.5">
+                  {topFoods.map(([name, count]) => (
+                    <li key={name} className="flex items-center justify-between text-[13px] text-foreground">
+                      <span>{name}</span>
+                      <span className="num text-muted-foreground">×{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            </>
           )}
         </>
       )}
@@ -180,26 +192,27 @@ export default async function AnalyticsPage() {
   )
 }
 
-function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="flex flex-col items-center rounded-input border border-border-subtle bg-surface-card p-3 shadow-card">
-      <span className="nom-data text-xl font-bold text-text-strong">{value}</span>
-      <span className="text-[10px] text-text-muted">{unit}</span>
-      <span className="nom-eyebrow mt-1 text-[9px] text-text-muted">{label}</span>
+    <div className="flex flex-col">
+      <span className={`num text-[22px] font-medium leading-none ${accent ? 'text-primary' : 'text-foreground'}`}>
+        {value}
+      </span>
+      <span className="eyebrow mt-2">{label}</span>
     </div>
   )
 }
 
-function MacroRow({ label, value, goal, color }: { label: string; value: number; goal: number; color: string }) {
+function MacroRow({ label, value, goal }: { label: string; value: number; goal: number }) {
   const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-sm">
-        <span className="text-text-body">{label}</span>
-        <span className="nom-data text-text-muted">{value} / {goal} g</span>
+      <div className="mb-1.5 flex items-center justify-between text-[13px]">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="num text-foreground">{value} <span className="text-muted-foreground">/ {goal} g</span></span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="h-px w-full bg-muted">
+        <div className="h-full bg-foreground/30" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )

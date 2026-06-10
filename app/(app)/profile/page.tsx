@@ -30,10 +30,12 @@ export default async function ProfilePage() {
   const heightCm = profile?.height_cm ?? null
   const bmi = bmiInfo(currentWeight, heightCm)
 
-  // weight delta over the charted window
   let delta: { value: number; weeks: number } | null = null
   if (series.length >= 2) {
-    delta = { value: Math.round((series[series.length - 1].weight - series[0].weight) * 10) / 10, weeks: series.length - 1 }
+    delta = {
+      value: Math.round((series[series.length - 1].weight - series[0].weight) * 10) / 10,
+      weeks: series.length - 1,
+    }
   }
 
   const name = profile?.name?.trim() || ''
@@ -73,30 +75,24 @@ export default async function ProfilePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[390px] px-6 py-6">
+    <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
       {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <span className="font-display text-lg font-bold lowercase text-text-strong">nomlog</span>
-        <span className="nom-eyebrow text-text-muted">Profile</span>
+      <div className="mb-10 flex items-center justify-between">
+        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
+        <span className="eyebrow">Profile</span>
       </div>
 
       {/* Identity */}
-      <section className="mt-8 flex items-center gap-4">
+      <section className="flex items-center gap-4">
         <div className="relative">
-          <div
-            className="flex h-[68px] w-[68px] items-center justify-center rounded-full font-display text-2xl font-bold"
-            style={{ backgroundColor: 'var(--color-tomato-100)', color: 'var(--color-tomato-600)' }}
-          >
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft font-display text-lg text-primary">
             {initial}
           </div>
-          <span
-            className="absolute bottom-1 right-1 h-3 w-3 rounded-full border-2"
-            style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-surface-page)' }}
-          />
+          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-[var(--color-success)]" />
         </div>
         <div>
-          <h1 className="font-display text-3xl font-bold leading-tight text-text-strong">{displayName}</h1>
-          <p className="text-sm text-text-muted">{user.email}</p>
+          <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">{displayName}</h1>
+          <p className="text-[13px] text-muted-foreground">{user.email}</p>
         </div>
       </section>
 
@@ -107,12 +103,12 @@ export default async function ProfilePage() {
         <Stat value={`${stats.onGoalPct}%`} label="On goal" />
       </section>
 
-      <Divider />
+      <div className="divider my-7" />
 
       {/* Body */}
       <section>
         <div className="flex items-center justify-between">
-          <span className="nom-eyebrow text-text-muted">Body</span>
+          <span className="eyebrow">Body</span>
           <LogWeightSheet
             currentWeight={currentWeight}
             name={name}
@@ -123,15 +119,15 @@ export default async function ProfilePage() {
 
         <div className="mt-4 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="nom-data text-5xl font-bold text-text-strong">
+            <span className="num text-[38px] font-medium leading-none text-foreground">
               {currentWeight !== null ? currentWeight.toFixed(1) : '—'}
             </span>
-            <span className="text-lg text-text-muted">kg</span>
+            <span className="text-[13px] text-muted-foreground">kg</span>
           </div>
           {delta && (
             <span
-              className="nom-data text-sm"
-              style={{ color: delta.value <= 0 ? 'var(--color-success)' : 'var(--color-text-muted)' }}
+              className="num text-[13px]"
+              style={{ color: delta.value <= 0 ? 'var(--color-success)' : 'var(--color-destructive)' }}
             >
               {delta.value > 0 ? '+' : ''}
               {delta.value.toFixed(1)} kg · {delta.weeks} wk
@@ -143,39 +139,37 @@ export default async function ProfilePage() {
           {series.length >= 2 ? (
             <WeightChart data={series.map((s) => ({ label: s.label, weight: s.weight }))} />
           ) : (
-            <p className="rounded-card border border-dashed border-border-default px-4 py-6 text-center text-sm text-text-muted">
-              Log your weight over a few weeks to see your trend. 📉
+            <p className="py-6 text-center text-[13px] text-muted-foreground">
+              Log your weight over a few weeks to see your trend.
             </p>
           )}
         </div>
 
-        <div className="mt-4 flex items-center gap-6 text-sm">
-          <span className="text-text-muted">
+        <div className="mt-4 flex items-center gap-6 text-[13px]">
+          <span className="text-muted-foreground">
             Height{' '}
-            <span className="nom-data font-semibold text-text-strong">
-              {heightCm !== null ? `${heightCm} cm` : '—'}
-            </span>
+            <span className="num font-medium text-foreground">{heightCm !== null ? `${heightCm} cm` : '—'}</span>
           </span>
-          <span className="text-text-muted">
+          <span className="text-muted-foreground">
             BMI{' '}
             {bmi ? (
               <>
-                <span className="nom-data font-semibold text-text-strong">{bmi.bmi}</span>{' '}
-                <span className="font-semibold" style={{ color: bmi.color }}>{bmi.label}</span>
+                <span className="num font-medium text-foreground">{bmi.bmi}</span>{' '}
+                <span style={{ color: bmi.color }}>{bmi.label}</span>
               </>
             ) : (
-              <span className="text-text-subtle">add height</span>
+              <span className="text-muted-foreground/70">add height</span>
             )}
           </span>
         </div>
       </section>
 
-      <Divider />
+      <div className="divider my-7" />
 
       {/* Daily targets */}
       <DailyTargets initial={targets} action={saveTargets} />
 
-      <Divider />
+      <div className="divider my-7" />
 
       {/* Account */}
       <AccountActions />
@@ -186,19 +180,12 @@ export default async function ProfilePage() {
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
     <div className="flex flex-col">
-      <span
-        className="font-display text-4xl font-bold leading-none"
-        style={{ color: accent ? 'var(--color-primary)' : 'var(--color-text-strong)' }}
-      >
+      <span className={`num text-[22px] font-medium leading-none ${accent ? 'text-primary' : 'text-foreground'}`}>
         {value}
       </span>
-      <span className="nom-eyebrow mt-2 text-text-muted">{label}</span>
+      <span className="eyebrow mt-2">{label}</span>
     </div>
   )
-}
-
-function Divider() {
-  return <hr className="my-7 border-0 border-t border-border-subtle" />
 }
 
 function firstName(email?: string) {

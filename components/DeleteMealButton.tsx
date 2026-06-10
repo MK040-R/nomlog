@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { X } from 'lucide-react'
 
 export function DeleteMealButton({ id }: { id: string }) {
   const router = useRouter()
@@ -23,9 +24,9 @@ export function DeleteMealButton({ id }: { id: string }) {
       onClick={remove}
       disabled={busy}
       aria-label="Delete meal"
-      className="text-text-subtle transition hover:text-primary disabled:opacity-40"
+      className="text-muted-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
     >
-      {busy ? '…' : '✕'}
+      <X className="h-3.5 w-3.5" strokeWidth={1.5} />
     </button>
   )
 }

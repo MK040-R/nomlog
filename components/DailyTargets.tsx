@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 type Targets = {
   goal_calories: string
@@ -34,14 +35,17 @@ export function DailyTargets({
     <div>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between"
+        className="flex w-full items-center justify-between transition-opacity hover:opacity-70"
         aria-expanded={open}
       >
-        <span className="nom-eyebrow text-text-muted">Daily targets</span>
-        <span className={`text-text-muted transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+        <span className="eyebrow">Daily targets</span>
+        <ChevronDown
+          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+          strokeWidth={1.5}
+        />
       </button>
 
-      {!open && <p className="nom-data mt-3 text-base text-text-body">{summary}</p>}
+      {!open && <p className="num mt-3 text-[15px] text-foreground">{summary}</p>}
 
       {open && (
         <form
@@ -58,7 +62,7 @@ export function DailyTargets({
         >
           {FIELDS.map((f) => (
             <label key={f.key} className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-text-body">{f.label}</span>
+              <span className="text-[13px] text-muted-foreground">{f.label}</span>
               <span className="flex items-center gap-2">
                 <input
                   name={f.key}
@@ -66,15 +70,24 @@ export function DailyTargets({
                   inputMode="numeric"
                   min={0}
                   defaultValue={initial[f.key]}
-                  className="nom-data w-24 rounded-input border border-border-default bg-surface-page px-3 py-2 text-right text-sm text-text-strong outline-none focus:border-primary"
+                  className="num field w-20 text-right text-[15px]"
                 />
-                <span className="w-8 text-xs text-text-muted">{f.unit}</span>
+                <span className="w-8 text-[11px] text-muted-foreground">{f.unit}</span>
               </span>
             </label>
           ))}
-          <button type="submit" disabled={saving} className="google-signin-btn mt-1 disabled:opacity-60">
-            {saving ? 'Saving…' : 'Save targets'}
-          </button>
+          <div className="mt-2 flex gap-2">
+            <button type="submit" disabled={saving} className="h-7 rounded-full bg-primary px-3 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-70 disabled:opacity-50">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="h-7 rounded-full px-3 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       )}
     </div>

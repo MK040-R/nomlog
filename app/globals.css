@@ -1,136 +1,127 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   NomLog · Design System v1.0
+   Warm, minimal, paper-like. Muted terracotta accent. Fraunces + Inter.
+   ========================================================================== */
+
 @theme {
-  /* ── Primitive color tokens ───────────────────────────────────────────────── */
+  /* Color — OKLCH, exposed as semantic tokens (no raw hex in components) */
+  --color-background: oklch(0.975 0.012 75);
+  --color-foreground: oklch(0.24 0.025 40);
+  --color-card: oklch(0.99 0.008 80);
+  --color-muted: oklch(0.94 0.014 70);
+  --color-muted-foreground: oklch(0.48 0.022 45);
+  --color-subtle: oklch(0.92 0.018 65);
+  --color-primary: oklch(0.605 0.115 38);
+  --color-primary-foreground: oklch(0.985 0.01 80);
+  --color-primary-soft: oklch(0.92 0.04 38);
+  --color-accent: oklch(0.88 0.05 40);
+  --color-border: oklch(0.89 0.018 60);
+  --color-ring: oklch(0.605 0.115 38);
+  --color-success: oklch(0.58 0.08 145);
+  --color-warning: oklch(0.7 0.13 60);
+  --color-destructive: oklch(0.52 0.16 25);
 
-  /* Tomato (primary / calorie ring / FABs) */
-  --color-tomato-500: #FF4E33;
-  --color-tomato-600: #E83A20;
-  --color-tomato-700: #C12C15;
+  /* Type */
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
-  /* Mustard (secondary / carbs) */
-  --color-mustard-500: #FFB627;
-
-  /* Plum (deep dark surfaces) */
-  --color-plum-400: #934A7E;
-  --color-plum-700: #3D1838;
-  --color-plum-800: #2A0F26;
-
-  /* Neutral / cream scale */
-  --color-n-0: #FFFFFF;
-  --color-n-50: #FFFBF5;
-  --color-n-100: #FBF3E9;
-  --color-n-200: #F4E8DA;
-  --color-n-300: #E7D6C3;
-  --color-n-400: #C9B4A3;
-  --color-n-500: #9C8676;
-  --color-n-800: #2E2228;
-  --color-n-900: #1F1620;
-
-  /* Avocado (fiber macro) */
-  --color-avocado-500: #5DAE52;
-
-  /* ── Semantic color aliases ───────────────────────────────────────────────── */
-  --color-primary: var(--color-tomato-500);
-  --color-primary-hover: var(--color-tomato-600);
-  --color-primary-press: var(--color-tomato-700);
-  --color-secondary: var(--color-mustard-500);
-
-  --color-surface-page: var(--color-n-50);
-  --color-surface-card: var(--color-n-0);
-  --color-surface-sunken: var(--color-n-100);
-
-  --color-border-subtle: var(--color-n-200);
-  --color-border-default: var(--color-n-300);
-
-  --color-text-muted: var(--color-n-500);
-  --color-text-subtle: var(--color-n-400);
-  --color-text-body: var(--color-n-800);
-  --color-text-strong: var(--color-n-900);
-  --color-success: #469A3D;
-  --color-danger: #E5392B;
-
-  /* ── Macro colors ─────────────────────────────────────────────────────────── */
-  --color-macro-protein: var(--color-tomato-500);
-  --color-macro-carbs: var(--color-mustard-500);
-  --color-macro-fat: var(--color-plum-400);
-  --color-macro-fiber: var(--color-avocado-500);
-
-  /* ── Typography ───────────────────────────────────────────────────────────── */
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-sans: 'Plus Jakarta Sans', sans-serif;
-  --font-mono: 'Inter', system-ui, sans-serif;
-
-  /* ── Border radius ────────────────────────────────────────────────────────── */
-  --radius-card: 18px;
-  --radius-card-lg: 20px;
-  --radius-button: 999px;
-  --radius-input: 12px;
-
-  /* ── Animation easings ────────────────────────────────────────────────────── */
-  --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  /* ── Animation durations ─────────────────────────────────────────────────── */
-  --duration-fast: 120ms;
-  --duration-base: 200ms;
-  --duration-slow: 320ms;
-
-  /* ── Shadows ──────────────────────────────────────────────────────────────── */
-  --shadow-primary: 0 10px 26px rgba(255, 78, 51, 0.30);
-  --shadow-card: 0 4px 24px rgba(42, 15, 38, 0.10);
+  --radius: 1rem;
 }
 
-/* ── Base styles ────────────────────────────────────────────────────────────── */
 html {
   font-family: var(--font-sans);
-  background-color: var(--color-surface-page);
-  color: var(--color-text-body);
 }
 
-/* ── Utility classes ────────────────────────────────────────────────────────── */
-
-/* All numbers and data values use Roboto Mono with tabular figures */
-.nom-data {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Section labels / eyebrow text */
-.nom-eyebrow {
+/* --- Signature helpers ---------------------------------------------------- */
+
+/* Eyebrow / section label — tiny, uppercase, wide-tracked */
+.eyebrow {
   font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 10px;
   text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--color-muted-foreground);
 }
 
-/* Google OAuth sign-in button — tomato pill with glow shadow */
-.google-signin-btn {
-  display: flex;
+/* Any number that updates: display serif + tabular figures */
+.num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* The only structural separator in the app */
+.divider {
+  height: 1px;
+  width: 100%;
+  background-color: color-mix(in oklab, var(--color-border) 60%, transparent);
+}
+
+/* Primary pill button */
+.btn-primary {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  border-radius: var(--radius-button);
-  background-color: var(--color-tomato-500);
-  color: #ffffff;
+  gap: 8px;
+  border-radius: 9999px;
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 16px;
-  height: 52px;
+  font-weight: 500;
+  font-size: 14px;
+  height: 44px;
+  padding: 0 20px;
   border: none;
   cursor: pointer;
-  box-shadow: var(--shadow-primary);
-  transition: filter var(--duration-fast) var(--ease-base),
-              transform var(--duration-fast) var(--ease-base);
+  transition: opacity 0.15s ease;
 }
+.btn-primary:hover { opacity: 0.7; }
+.btn-primary:active { opacity: 0.6; }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
 
-.google-signin-btn:hover {
-  filter: brightness(0.95);
-  transform: translateY(-1px);
+/* Ghost pill button */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 9999px;
+  background-color: transparent;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 14px;
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
+.btn-ghost:hover { opacity: 0.7; }
+.btn-ghost:disabled { opacity: 0.5; }
 
-.google-signin-btn:active {
-  filter: brightness(0.94);
-  transform: scale(0.96);
+/* Minimal input — transparent, bottom hairline only */
+.field {
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  padding: 6px 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-foreground);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.field:focus {
+  border-bottom-color: var(--color-primary);
 }

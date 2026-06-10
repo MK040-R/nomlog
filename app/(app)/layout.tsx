@@ -14,7 +14,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-dvh bg-surface-page pb-20">
+    <div className="min-h-dvh bg-background pb-20">
       {children}
       <BottomNav />
     </div>

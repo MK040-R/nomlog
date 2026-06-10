@@ -11,51 +11,24 @@ export default async function LoginPage() {
   if (user) redirect('/dashboard')
 
   return (
-    <main
-      className="flex min-h-dvh flex-col items-center justify-center px-4"
-      style={{ backgroundColor: '#FFFBF5' }}
-    >
-      <div className="flex w-full max-w-xs flex-col items-center gap-10">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6">
+      <div className="flex w-full max-w-xs flex-col items-center gap-12">
         {/* Wordmark + tagline */}
         <div className="flex flex-col items-center gap-3">
-          <h1
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontWeight: 700,
-              fontSize: '34px',
-              letterSpacing: '-1.5px',
-              color: '#1F1620',
-              lineHeight: 1,
-            }}
-          >
-            Nomlog
-          </h1>
-          <p
-            style={{
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: '16px',
-              color: '#6F5A4D',
-              maxWidth: '240px',
-              textAlign: 'center',
-              lineHeight: 1.5,
-            }}
-          >
+          <h1 className="font-display text-4xl font-medium lowercase tracking-tight text-foreground">nomlog</h1>
+          <p className="max-w-[240px] text-center text-[15px] leading-relaxed text-muted-foreground">
             Know what you ate. See how it adds up.
           </p>
         </div>
 
         {/* Google OAuth button */}
         <form action="/auth/sign-in" method="POST" className="w-full">
-          <button
-            type="submit"
-            className="google-signin-btn w-full"
-          >
-            {/* White Google G logo */}
+          <button type="submit" className="btn-primary w-full">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
-              width="20"
-              height="20"
+              width="18"
+              height="18"
               aria-hidden="true"
             >
               <path

@@ -1,32 +1,26 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Plus_Jakarta_Sans, Inter } from 'next/font/google'
+import { Fraunces, Inter } from 'next/font/google'
 import './globals.css'
 
-const spaceGrotesk = Space_Grotesk({
+// Display serif — numbers, headings, brand wordmark
+const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-display',
   display: 'swap',
 })
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+// Body / labels / controls
+const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
   variable: '--font-sans',
-  display: 'swap',
-})
-
-// Numbers/data font. Inter has a clean (unslashed) zero and tabular figures.
-const dataFont = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-mono',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
   title: 'NomLog',
-  description: 'Voice-first food logging',
+  description: 'Know what you ate. See how it adds up.',
 }
 
 export default function RootLayout({
@@ -35,10 +29,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${plusJakartaSans.variable} ${dataFont.variable}`}
-    >
+    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body>{children}</body>
     </html>
   )
