@@ -88,15 +88,15 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ### TIPS — daily nudge
 
-- [ ] **TIP-01**: Daily tip card on dashboard: one personalized sentence from today's data
-- [ ] **TIP-02**: Generated max once/day, cached in DB
-- [ ] **TIP-03**: Brand voice: warm, witty, never clinical or naggy
+- [x] **TIP-01**: Daily tip card on dashboard: one personalized sentence from today's data
+- [x] **TIP-02**: Generated max once/day, cached in DB
+- [x] **TIP-03**: Brand voice: warm, witty, never clinical or naggy
 
 ### WHAT-FITS — "What can I eat now?"
 
-- [ ] **FIT-01**: Given remaining calories + macros, suggest 2–3 specific Indian dishes/snacks that fit
-- [ ] **FIT-02**: On-demand (one call per tap); suggestions show name + rough kcal/macros
-- [ ] **FIT-03** *(nice-to-have)*: One-tap log a suggestion
+- [x] **FIT-01**: Given remaining calories + macros, suggest 2–3 specific Indian dishes/snacks that fit
+- [x] **FIT-02**: On-demand (one call per tap); suggestions show name + rough kcal/macros
+- [x] **FIT-03** *(nice-to-have)*: One-tap log a suggestion
 
 ### RECAP — weekly narrative
 
@@ -105,14 +105,14 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ### ANLT — analytics interactivity (owner request 2026-06-10)
 
-- [ ] **ANLT-02**: Tapping a day's bar in the 7-day chart opens that day's detail — meals + stats (navigate to `/dashboard?date=` or inline expand). Touch targets must be generous; current bars are not reliably tappable
-- [ ] **ANLT-03**: Monthly calendar view (beyond the 7-day window) — Apple-Fitness-style grid where each day is a colored marker:
+- [x] **ANLT-02**: Tapping a day's bar in the 7-day chart opens that day's detail — meals + stats (navigate to `/dashboard?date=` or inline expand). Touch targets must be generous; current bars are not reliably tappable
+- [x] **ANLT-03**: Monthly calendar view (beyond the 7-day window) — Apple-Fitness-style grid where each day is a colored marker:
   - **Red**: calories clearly over goal
   - **Green**: within ~±10% of goal
   - **Yellow**: well under goal
   - **Muted/empty**: nothing logged
-- [ ] **ANLT-04**: Tapping a calendar day opens that day's dashboard view
-- [ ] **ANLT-05**: Month navigation (previous/next month)
+- [x] **ANLT-04**: Tapping a calendar day opens that day's dashboard view
+- [x] **ANLT-05**: Month navigation (previous/next month)
 
 ### QLOG — quick re-log (zero-cost, low priority)
 
@@ -162,4 +162,4 @@ Explicitly excluded. Documented to prevent scope creep.
 ---
 
 *Requirements defined: 2026-06-09*
-*Last updated: 2026-06-10 — v1 marked shipped; v1.1 scope agreed with owner (Ask, tips, what-fits, recap, analytics interactivity, monthly calendar)*
+*Last updated: 2026-06-10 — TIP, FIT and ANLT-02..05 shipped (tips, what-fits + one-tap log, tappable bars, monthly calendar). Pending owner step: apply supabase/migrations/0004_daily_tips.sql so tips cache once/day. Remaining v1.1: ASK, RCAP, QLOG.*
