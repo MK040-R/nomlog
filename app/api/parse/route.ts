@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
-import { parseMeal, GeminiBusyError } from '@/lib/gemini/parse'
+import { parseMeal } from '@/lib/gemini/parse'
+import { GeminiBusyError } from '@/lib/gemini/generate'
 
 export async function POST(request: Request) {
   const user = await verifySession()
@@ -17,6 +18,12 @@ export async function POST(request: Request) {
 
   try {
     const parsed = await parseMeal(text.data)
+    if (parsed.items.length === 0) {
+      return NextResponse.json(
+        { error: "That didn't sound like food. Try something like 'two rotis and dal'." },
+        { status: 422 }
+      )
+    }
     return NextResponse.json(parsed)
   } catch (err) {
     console.error('parseMeal failed:', err)
