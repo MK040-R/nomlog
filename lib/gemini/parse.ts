@@ -1,7 +1,7 @@
 import 'server-only'
 import { Type } from '@google/genai'
 import { z } from 'zod'
-import { ai } from './client'
+import { getAI } from './client'
 
 // Zod schema — validates whatever Gemini returns before we trust it.
 export const FoodItemSchema = z.object({
@@ -106,7 +106,7 @@ export async function parseMeal(text: string): Promise<ParsedMeal> {
 
   for (let attempt = 0; attempt < MODELS.length; attempt++) {
     try {
-      const res = await ai.models.generateContent({
+      const res = await getAI().models.generateContent({
         model: MODELS[attempt],
         contents: prompt,
         config: {
