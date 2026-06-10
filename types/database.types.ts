@@ -47,6 +47,24 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['meal_logs']['Insert']>
         Relationships: []
       }
+      weight_logs: {
+        Row: {
+          id: string
+          user_id: string
+          logged_on: string
+          weight_kg: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          logged_on: string
+          weight_kg: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['weight_logs']['Insert']>
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           id: string
