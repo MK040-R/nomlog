@@ -83,6 +83,24 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['daily_tips']['Insert']>
         Relationships: []
       }
+      weekly_recaps: {
+        Row: {
+          id: string
+          user_id: string
+          week_start: string
+          recap: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          week_start: string
+          recap: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['weekly_recaps']['Insert']>
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           id: string

@@ -12,6 +12,7 @@ import {
   DEFAULT_GOALS,
 } from '@/lib/nutrition'
 import type { FoodItem } from '@/types/app.types'
+import { WeeklyRecap } from '@/components/WeeklyRecap'
 
 type DayTotals = { cal: number; p: number; c: number; f: number; fib: number; count: number }
 
@@ -141,6 +142,7 @@ export default async function AnalyticsPage({
 
       <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">How it&apos;s adding up</h1>
       <p className="mt-1 text-[13px] text-muted-foreground">Last 7 days</p>
+      <WeeklyRecap />
 
       {loggedDays.length === 0 ? (
         <p className="mt-8 text-[13px] text-muted-foreground">
