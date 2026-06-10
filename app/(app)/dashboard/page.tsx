@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { LogMeal } from '@/components/LogMeal'
 import { MealCard } from '@/components/MealCard'
+import { DailyTip } from '@/components/DailyTip'
+import { WhatFits } from '@/components/WhatFits'
 import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
 import type { FoodItem } from '@/types/app.types'
 
@@ -90,6 +92,7 @@ export default async function DashboardPage({
       <h1 className="mt-8 font-display text-[22px] font-medium leading-tight text-foreground">
         {isToday ? `${greeting()}, ${displayName}` : 'Looking back'}
       </h1>
+      {isToday && <DailyTip />}
 
       <div className="divider my-7" />
 
@@ -133,6 +136,9 @@ export default async function DashboardPage({
             <span className="eyebrow">Log a meal</span>
             <div className="mt-4">
               <LogMeal />
+            </div>
+            <div className="mt-4">
+              <WhatFits />
             </div>
           </section>
         </>

@@ -1,4 +1,4 @@
-import type { FoodItem } from '@/types/app.types'
+import type { FoodItem, MealType } from '@/types/app.types'
 
 /**
  * Sum a list of food items into meal totals.
@@ -66,6 +66,19 @@ export function weekdayShort(ymd: string) {
     weekday: 'short',
     timeZone: 'UTC',
   })
+}
+
+/** The meal type a fresh log most likely is, by IST hour (mirrors CORR-05). */
+export function mealTypeForIstHour(h: number): MealType {
+  if (h < 11) return 'breakfast'
+  if (h < 16) return 'lunch'
+  if (h < 19) return 'snack'
+  return 'dinner'
+}
+
+/** Current hour (0-23) in IST — safe on client and server. */
+export function istHourNow() {
+  return new Date(Date.now() + IST_OFFSET_MS).getUTCHours()
 }
 
 /** Default goals when the user hasn't set their own yet. */

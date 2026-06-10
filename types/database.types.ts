@@ -65,6 +65,24 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['weight_logs']['Insert']>
         Relationships: []
       }
+      daily_tips: {
+        Row: {
+          id: string
+          user_id: string
+          tip_date: string
+          tip: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          tip_date: string
+          tip: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['daily_tips']['Insert']>
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           id: string
