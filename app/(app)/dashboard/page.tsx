@@ -7,6 +7,7 @@ import { LogMeal } from '@/components/LogMeal'
 import { MealCard } from '@/components/MealCard'
 import { DailyTip } from '@/components/DailyTip'
 import { WhatFits } from '@/components/WhatFits'
+import { QuickRelog, type RelogOption } from '@/components/QuickRelog'
 import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
 import type { FoodItem } from '@/types/app.types'
 
@@ -24,7 +25,7 @@ export default async function DashboardPage({
   if (ymd > istToday()) redirect('/dashboard')
   const isToday = ymd === istToday()
 
-  const [{ data: meals }, { data: profile }] = await Promise.all([
+  const [{ data: meals }, { data: profile }, { data: recentMeals }] = await Promise.all([
     supabase
       .from('meal_logs')
       .select('*')
@@ -32,6 +33,16 @@ export default async function DashboardPage({
       .lt('logged_at', endIso)
       .order('logged_at', { ascending: true }),
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
+    // last 14 days, for the one-tap "log again" chips (today view only)
+    isToday
+      ? supabase
+          .from('meal_logs')
+          .select('food_items, total_calories, logged_at')
+          .gte('logged_at', istDayRange(shiftYmd(istToday(), -14)).startIso)
+          .lt('logged_at', endIso)
+          .order('logged_at', { ascending: false })
+          .limit(60)
+      : Promise.resolve({ data: null }),
   ])
 
   const rows = meals ?? []
@@ -53,6 +64,26 @@ export default async function DashboardPage({
     }),
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   )
+
+  // Top repeated meals from the last 14 days, most frequent first (QLOG-01).
+  const bySig = new Map<string, { count: number; option: RelogOption }>()
+  for (const m of recentMeals ?? []) {
+    const items = ((m.food_items as unknown as FoodItem[]) ?? []).filter((it) => it?.name)
+    if (items.length === 0) continue
+    const sig = items.map((it) => `${it.name}|${it.portion}`.toLowerCase()).sort().join(';')
+    const found = bySig.get(sig)
+    if (found) found.count++
+    else {
+      const names = items.map((it) => it.name)
+      const label = names.length > 2 ? `${names.slice(0, 2).join(' + ')} +${names.length - 2}` : names.join(' + ')
+      bySig.set(sig, { count: 1, option: { label, kcal: m.total_calories, items } })
+    }
+  }
+  const relogOptions = [...bySig.values()]
+    .filter((e) => e.count >= 2) // only meals they actually repeat
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map((e) => e.option)
 
   const remaining = goals.calories - consumed.calories
   const pct = Math.min(100, Math.round((consumed.calories / goals.calories) * 100)) || 0
@@ -137,6 +168,11 @@ export default async function DashboardPage({
             <div className="mt-4">
               <LogMeal />
             </div>
+            {relogOptions.length > 0 && (
+              <div className="mt-4">
+                <QuickRelog options={relogOptions} />
+              </div>
+            )}
             <div className="mt-4">
               <WhatFits />
             </div>
