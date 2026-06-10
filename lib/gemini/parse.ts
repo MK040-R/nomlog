@@ -68,19 +68,45 @@ Rules:
 User said: "${text}"`
 }
 
+// Thrown when every model attempt failed because Gemini was overloaded (503).
+// Lets the API route tell the user "busy, try again" instead of "rephrase".
+export class GeminiBusyError extends Error {
+  constructor() {
+    super('Gemini is overloaded')
+    this.name = 'GeminiBusyError'
+  }
+}
+
+// Tried in order. flash and flash-lite sit on different capacity pools, so if
+// one is overloaded the other usually succeeds immediately. (gemini-2.0-flash
+// is quota-exhausted on this key, so it's intentionally not in the chain.)
+const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']
+
+function isOverloaded(err: unknown) {
+  const s = String(err)
+  return (
+    s.includes('503') ||
+    s.includes('UNAVAILABLE') ||
+    s.includes('overloaded') ||
+    s.includes('high demand') ||
+    s.includes('429') ||
+    s.includes('RESOURCE_EXHAUSTED')
+  )
+}
+
 /**
  * Parse a free-text meal description into structured items + nutrition.
- * Retries once if Gemini returns something that doesn't validate.
+ * Rotates across models on failure; throws GeminiBusyError if all were overloaded.
  */
 export async function parseMeal(text: string): Promise<ParsedMeal> {
   const prompt = buildPrompt(text)
   let lastError: unknown
+  let everSucceededCall = false
 
-  // Retry on both transient API errors (e.g. 503 "high demand") and bad output.
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < MODELS.length; attempt++) {
     try {
       const res = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: MODELS[attempt],
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -88,13 +114,19 @@ export async function parseMeal(text: string): Promise<ParsedMeal> {
           temperature: 0.2,
         },
       })
+      everSucceededCall = true
       const json = JSON.parse(res.text ?? '{}')
       return ParsedMealSchema.parse(json)
     } catch (err) {
       lastError = err
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)))
+      // If the call itself returned JSON but it failed validation, a different
+      // model won't help much — but a quick retry is cheap. Back off briefly.
+      if (attempt < MODELS.length - 1) await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
     }
   }
 
-  throw new Error(`Gemini parse failed after retries: ${String(lastError)}`)
+  // Every attempt failed. If they were all "overloaded" (and we never got a
+  // usable response), surface a busy error so the user knows to just retry.
+  if (!everSucceededCall && isOverloaded(lastError)) throw new GeminiBusyError()
+  throw new Error(`Gemini parse failed: ${String(lastError)}`)
 }
