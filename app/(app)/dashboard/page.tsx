@@ -4,16 +4,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { LogMeal } from '@/components/LogMeal'
-import { DeleteMealButton } from '@/components/DeleteMealButton'
+import { MealCard } from '@/components/MealCard'
 import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
-import type { FoodItem, MealType } from '@/types/app.types'
-
-const MEAL_EMOJI: Record<MealType, string> = {
-  breakfast: '🍳',
-  lunch: '🍛',
-  dinner: '🌙',
-  snack: '🍌',
-}
+import type { FoodItem } from '@/types/app.types'
 
 export default async function DashboardPage({
   searchParams,
@@ -155,30 +148,18 @@ export default async function DashboardPage({
           </p>
         ) : (
           <div className="mt-4 flex flex-col">
-            {rows.map((m, idx) => {
-              const foods = (m.food_items as unknown as FoodItem[]) ?? []
-              return (
-                <div key={m.id} className={idx > 0 ? 'border-t border-border/60 pt-4 mt-4' : ''}>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-[13px] font-medium capitalize text-foreground">
-                      <span>{MEAL_EMOJI[m.meal_type]}</span> {m.meal_type}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="num text-[13px] text-foreground">{m.total_calories} kcal</span>
-                      <DeleteMealButton id={m.id} />
-                    </div>
-                  </div>
-                  <ul className="flex flex-col gap-0.5">
-                    {foods.map((f, i) => (
-                      <li key={i} className="flex justify-between text-[13px] text-muted-foreground">
-                        <span>{f.name} · {f.portion}</span>
-                        <span className="num">{Math.round(f.calories_kcal)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )
-            })}
+            {rows.map((m, idx) => (
+              <div key={m.id} className={idx > 0 ? 'mt-4 border-t border-border/60 pt-4' : ''}>
+                <MealCard
+                  meal={{
+                    id: m.id,
+                    meal_type: m.meal_type,
+                    total_calories: m.total_calories,
+                    food_items: (m.food_items as unknown as FoodItem[]) ?? [],
+                  }}
+                />
+              </div>
+            ))}
           </div>
         )}
       </section>
