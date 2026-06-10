@@ -77,10 +77,11 @@ export class GeminiBusyError extends Error {
   }
 }
 
-// Tried in order. flash and flash-lite sit on different capacity pools, so if
-// one is overloaded the other usually succeeds immediately. (gemini-2.0-flash
-// is quota-exhausted on this key, so it's intentionally not in the chain.)
-const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']
+// Tried in order. flash-lite is primary: on the free tier it has more headroom
+// and lower latency, and our estimates are rough-and-correctable so the slight
+// quality drop doesn't matter. Full flash is the fallback when lite is busy.
+// (gemini-2.0-flash is quota-exhausted on this key, so it's left out.)
+const MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
 
 function isOverloaded(err: unknown) {
   const s = String(err)
