@@ -41,6 +41,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Touch responsiveness: kill the mobile-Safari tap delay and the grey flash so
+   a single tap registers immediately on buttons, links and controls. */
+button,
+a,
+select,
+input,
+textarea,
+label,
+[role='button'] {
+  touch-action: manipulation;
+}
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* --- Signature helpers ---------------------------------------------------- */
 
 /* Eyebrow / section label — tiny, uppercase, wide-tracked */
@@ -84,7 +99,11 @@ body {
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
-.btn-primary:hover { opacity: 0.7; }
+/* Hover only on real pointer devices — on touch, the first tap must activate,
+   not get absorbed by a hover state. */
+@media (hover: hover) {
+  .btn-primary:hover { opacity: 0.7; }
+}
 .btn-primary:active { opacity: 0.6; }
 .btn-primary:disabled { opacity: 0.5; cursor: default; }
 
@@ -106,7 +125,10 @@ body {
   cursor: pointer;
   transition: opacity 0.15s ease;
 }
-.btn-ghost:hover { opacity: 0.7; }
+@media (hover: hover) {
+  .btn-ghost:hover { opacity: 0.7; }
+}
+.btn-ghost:active { opacity: 0.6; }
 .btn-ghost:disabled { opacity: 0.5; }
 
 /* Minimal input — transparent, bottom hairline only */
