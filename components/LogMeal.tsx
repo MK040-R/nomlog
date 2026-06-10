@@ -43,12 +43,15 @@ export function LogMeal() {
   const manualStopRef = useRef(false)
   const committedRef = useRef('')
   const transcriptRef = useRef('')
+  const voiceUsedRef = useRef(false)
+  const [reviewHint, setReviewHint] = useState(false)
 
   async function parse(input: string) {
     const clean = input.trim()
     if (!clean) return
     setStatus('parsing')
     setError(null)
+    setReviewHint(false)
     try {
       const data = await callParse(clean)
       setItems(data.items)
@@ -91,7 +94,7 @@ export function LogMeal() {
         body: JSON.stringify({
           meal_type: mealType,
           raw_input: rawInput,
-          input_source: 'text',
+          input_source: voiceUsedRef.current ? 'voice' : 'text',
           confidence,
           edited,
           items,
@@ -113,6 +116,8 @@ export function LogMeal() {
     setAddText('')
     setStatus('idle')
     setError(null)
+    setReviewHint(false)
+    voiceUsedRef.current = false
   }
 
   function updateItem(i: number, field: keyof FoodItem, value: string) {
@@ -147,6 +152,7 @@ export function LogMeal() {
     rec.continuous = true
 
     rec.onresult = (e: any) => {
+      voiceUsedRef.current = true
       let interim = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const chunk = e.results[i][0].transcript
@@ -166,11 +172,12 @@ export function LogMeal() {
       }
     }
 
+    // On manual stop the transcript stays in the textarea for the user to
+    // review and edit — parsing only happens when they tap "Log it".
     rec.onend = () => {
       if (manualStopRef.current) {
         setListening(false)
-        const t = transcriptRef.current.trim()
-        if (t) parse(t)
+        if (transcriptRef.current.trim()) setReviewHint(true)
       } else {
         try {
           rec.start()
@@ -329,6 +336,9 @@ export function LogMeal() {
       />
 
       {listening && <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>}
+      {!listening && reviewHint && (
+        <p className="mt-2 text-[13px] text-muted-foreground">Got it — check the text, then tap Log it.</p>
+      )}
       {error && <p className="mt-2 text-[13px] text-destructive">{error}</p>}
 
       <div className="mt-3 flex items-center gap-3">
