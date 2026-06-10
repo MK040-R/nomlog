@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, LineChart, User } from 'lucide-react'
+import { Home, LineChart, Sparkles, User } from 'lucide-react'
 
 const TABS = [
   { href: '/dashboard', label: 'Today', Icon: Home },
+  { href: '/ask', label: 'Ask', Icon: Sparkles },
   { href: '/analytics', label: 'Insights', Icon: LineChart },
   { href: '/profile', label: 'You', Icon: User },
 ]
