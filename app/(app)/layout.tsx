@@ -1,5 +1,6 @@
 import { verifySession } from '@/lib/dal'
 import { redirect } from 'next/navigation'
+import { BottomNav } from '@/components/BottomNav'
 
 export default async function AppLayout({
   children,
@@ -12,5 +13,10 @@ export default async function AppLayout({
     redirect('/login')
   }
 
-  return <>{children}</>
+  return (
+    <div className="min-h-dvh bg-surface-page pb-20">
+      {children}
+      <BottomNav />
+    </div>
+  )
 }

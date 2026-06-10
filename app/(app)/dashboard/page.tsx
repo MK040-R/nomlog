@@ -1,10 +1,10 @@
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { SignOutButton } from '@/components/SignOutButton'
+import Link from 'next/link'
 import { LogMeal } from '@/components/LogMeal'
 import { DeleteMealButton } from '@/components/DeleteMealButton'
-import { istDayRange, DEFAULT_GOALS } from '@/lib/nutrition'
+import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
 import type { FoodItem, MealType } from '@/types/app.types'
 
 const MEAL_EMOJI: Record<MealType, string> = {
@@ -14,12 +14,18 @@ const MEAL_EMOJI: Record<MealType, string> = {
   snack: '🍌',
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>
+}) {
   const user = await verifySession()
   if (!user) redirect('/login')
 
+  const { date: dateParam } = await searchParams
   const supabase = await createClient()
-  const { startIso, endIso } = istDayRange()
+  const { startIso, endIso, ymd } = istDayRange(dateParam)
+  const isToday = ymd === istToday()
 
   const [{ data: meals }, { data: profile }] = await Promise.all([
     supabase
@@ -52,24 +58,46 @@ export default async function DashboardPage() {
   )
 
   const remaining = goals.calories - consumed.calories
-  const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toLocaleDateString('en-IN', {
+  const dateLabel = new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     timeZone: 'UTC',
   })
+  const prevHref = `/dashboard?date=${shiftYmd(ymd, -1)}`
+  const nextDay = shiftYmd(ymd, 1)
+  const nextHref = nextDay > istToday() ? null : `/dashboard?date=${nextDay}`
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-5 bg-surface-page px-4 py-6">
+    <main className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 py-6">
       {/* Header */}
       <header className="flex items-center justify-between">
         <div>
-          <p className="nom-eyebrow text-text-muted">{today}</p>
+          <p className="nom-eyebrow text-text-muted">{isToday ? 'Today' : dateLabel}</p>
           <h1 className="font-display text-2xl font-bold text-text-strong">
-            {greeting()}, {firstName(user.email)} 👋
+            {isToday ? `${greeting()}, ${firstName(user.email)} 👋` : 'Looking back'}
           </h1>
         </div>
-        <SignOutButton />
+        <div className="flex items-center gap-1">
+          <Link
+            href={prevHref}
+            aria-label="Previous day"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-text-body transition active:scale-95"
+          >
+            ‹
+          </Link>
+          {nextHref ? (
+            <Link
+              href={nextHref}
+              aria-label="Next day"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-text-body transition active:scale-95"
+            >
+              ›
+            </Link>
+          ) : (
+            <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border-subtle text-text-subtle">›</span>
+          )}
+        </div>
       </header>
 
       {/* Calorie summary */}
@@ -98,15 +126,15 @@ export default async function DashboardPage() {
         <MacroTile label="Fiber" value={consumed.fiber} goal={goals.fiber} color="var(--color-macro-fiber)" />
       </section>
 
-      {/* Log a meal */}
-      <LogMeal />
+      {/* Log a meal (only on today) */}
+      {isToday && <LogMeal />}
 
-      {/* Today's meals */}
+      {/* Meals */}
       <section className="flex flex-col gap-3">
-        <h2 className="nom-eyebrow text-text-muted">Today&apos;s meals</h2>
+        <h2 className="nom-eyebrow text-text-muted">{isToday ? "Today's meals" : 'Meals'}</h2>
         {rows.length === 0 ? (
           <p className="rounded-card border border-dashed border-border-default bg-surface-card px-4 py-8 text-center text-sm text-text-muted">
-            Nothing logged yet. Tell me what you ate above. ☝️
+            {isToday ? 'Nothing logged yet. Tell me what you ate above. ☝️' : 'Nothing was logged this day.'}
           </p>
         ) : (
           rows.map((m) => {

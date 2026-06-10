@@ -42,6 +42,32 @@ export function istToday() {
   return new Date(Date.now() + IST_OFFSET_MS).toISOString().slice(0, 10)
 }
 
+/** The IST calendar day (YYYY-MM-DD) a given timestamp falls on. */
+export function istYmdOf(iso: string) {
+  return new Date(new Date(iso).getTime() + IST_OFFSET_MS).toISOString().slice(0, 10)
+}
+
+/** Shift a YYYY-MM-DD by N days (positive or negative). */
+export function shiftYmd(ymd: string, days: number) {
+  const d = new Date(ymd + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+/** The last N days as YYYY-MM-DD, oldest first, ending today (IST). */
+export function lastNDays(n: number) {
+  const today = istToday()
+  return Array.from({ length: n }, (_, i) => shiftYmd(today, -(n - 1 - i)))
+}
+
+/** Short weekday label (e.g. "Mon") for a YYYY-MM-DD. */
+export function weekdayShort(ymd: string) {
+  return new Date(ymd + 'T00:00:00Z').toLocaleDateString('en-IN', {
+    weekday: 'short',
+    timeZone: 'UTC',
+  })
+}
+
 /** Default goals when the user hasn't set their own yet. */
 export const DEFAULT_GOALS = {
   goal_calories: 2000,
