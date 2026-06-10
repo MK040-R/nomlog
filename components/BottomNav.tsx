@@ -14,8 +14,11 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-border/60 bg-background/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[420px] items-stretch justify-around">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-10 border-t border-border/60 bg-background/95 backdrop-blur"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="mx-auto flex max-w-[420px] items-stretch justify-around pt-1">
         {TABS.map(({ href, label, Icon }) => {
           const active = pathname === href
           return (

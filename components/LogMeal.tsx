@@ -315,17 +315,17 @@ export function LogMeal() {
 
   // ---- Idle / parsing ----
   return (
-    <div>
+    <div className="rounded-3xl border border-border bg-card p-4 shadow-[0_2px_16px_rgba(120,80,60,0.06)]">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) parse(text)
         }}
-        placeholder="two rotis, dal, a bowl of curd…"
+        placeholder="What did you eat? e.g. two rotis, dal, a bowl of curd"
         rows={2}
         disabled={status === 'parsing'}
-        className="field resize-none text-[15px]"
+        className="w-full resize-none bg-transparent text-[16px] leading-snug text-foreground outline-none placeholder:text-muted-foreground"
       />
 
       {listening && <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>}
@@ -335,17 +335,17 @@ export function LogMeal() {
         <button
           onClick={() => (listening ? stopVoice() : startVoice())}
           disabled={status === 'parsing'}
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
             listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
           }`}
           aria-label={listening ? 'Stop listening' : 'Speak your meal'}
         >
-          {listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-4 w-4" strokeWidth={1.5} />}
+          {listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-5 w-5" strokeWidth={1.5} />}
         </button>
         <button
           onClick={() => parse(text)}
           disabled={status === 'parsing' || !text.trim() || listening}
-          className="btn-primary flex-1"
+          className="btn-primary h-12 flex-1 text-[15px]"
         >
           {status === 'parsing' ? 'Reading…' : 'Log it'}
         </button>

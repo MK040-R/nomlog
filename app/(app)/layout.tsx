@@ -14,7 +14,10 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-dvh bg-background pb-20">
+    <div
+      className="min-h-dvh bg-background"
+      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+    >
       {children}
       <BottomNav />
     </div>

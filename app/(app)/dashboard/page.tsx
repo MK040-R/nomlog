@@ -171,7 +171,10 @@ function Macro({ label, value, goal }: { label: string; value: number; goal: num
   const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
   return (
     <div className="flex w-[22%] flex-col">
-      <span className="num text-[20px] font-medium leading-none text-foreground">{Math.round(value)}</span>
+      <span className="num text-[20px] font-medium leading-none text-foreground">
+        {Math.round(value)}
+        <span className="text-[12px] font-normal text-muted-foreground">g</span>
+      </span>
       <span className="eyebrow mt-1.5">{label}</span>
       <div className="mt-2 h-px w-full bg-muted">
         <div className="h-full bg-foreground/30" style={{ width: `${pct}%` }} />

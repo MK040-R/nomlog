@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter } from 'next/font/google'
 import './globals.css'
 
@@ -21,6 +21,14 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'NomLog',
   description: 'Know what you ate. See how it adds up.',
+  // When added to the iOS home screen, open as a standalone app
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'NomLog' },
+}
+
+export const viewport: Viewport = {
+  // Extend under the iPhone status bar / home indicator so safe-area insets work
+  viewportFit: 'cover',
+  themeColor: '#FBF4EA',
 }
 
 export default function RootLayout({
