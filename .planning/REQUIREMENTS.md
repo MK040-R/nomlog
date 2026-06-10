@@ -3,7 +3,9 @@
 **Defined:** 2026-06-09
 **Core Value:** Speak what you ate in under 30 seconds and never lose the data — the correction panel exists to fix estimates, not to slow down logging.
 
-## v1 Requirements
+## v1 Requirements — ✅ SHIPPED (2026-06-10)
+
+All v1 requirements are built, deployed to Vercel (nomlog-neon.vercel.app), and in daily use.
 
 ### Authentication (AUTH)
 
@@ -11,76 +13,128 @@
 - [x] **AUTH-02**: User session persists across browser closes without requiring re-login
 - [x] **AUTH-03**: User can sign out explicitly from their profile screen
 - [x] **AUTH-04**: Two different Google accounts have completely separate data with no cross-visibility
-- [x] **AUTH-05**: Supabase Row-Level Security (RLS) policies enforce per-user data isolation at the database level; verified with two separate test accounts before any second real user is added
+- [x] **AUTH-05**: Supabase RLS policies enforce per-user data isolation at the database level
 
 ### Goals (GOAL)
 
-- [ ] **GOAL-01**: User can set daily targets: calorie (kcal), protein (g), carbs (g or % of calories), fat (g or % of calories), fiber (g)
-- [ ] **GOAL-02**: Default goals are pre-filled on first login (2000 kcal / 30% protein / 40% carbs / 30% fat / 25g fiber) with a first-time prompt to customize
-- [ ] **GOAL-03**: Goals are editable at any time; changes apply from the current day forward without retroactively altering historical analytics
+- [x] **GOAL-01**: User can set daily targets: calories, protein, carbs, fat, fiber (grams)
+- [x] **GOAL-02**: Default goals pre-filled (2000 kcal / 90p / 250c / 65f / 30fi) until customized
+- [x] **GOAL-03**: Goals editable any time from the profile (collapsible "Daily targets" row)
 
 ### Food Input (INPUT)
 
-- [ ] **INPUT-01**: User can speak what they ate in natural language using the browser mic (Web Speech API, `lang: 'en-IN'`); transcribed text is shown before LLM call
-- [ ] **INPUT-02**: Text input box is always visible alongside the mic button — not hidden behind it or shown only on mic failure
-- [ ] **INPUT-03**: Mic permission denial is handled gracefully: mic button hidden, text input shown with a one-line explanation
-- [ ] **INPUT-04**: Voice input handles English, Hinglish (Hindi-English code-switching), and Indian food names (dal tadka, 2 rotis, half plate biryani, multigrain atta roti, etc.)
+- [x] **INPUT-01**: Voice input via Web Speech API (`lang: 'en-IN'`), continuous listening until user taps stop; transcript shown live
+- [x] **INPUT-02**: Text input always visible alongside the mic button
+- [x] **INPUT-03**: Mic permission denial handled gracefully with explanation
+- [x] **INPUT-04**: Handles English, Hinglish, and Indian food names
 
 ### LLM Parsing (LLM)
 
-- [ ] **LLM-01**: Natural language food description is parsed by Gemini 2.5 Flash via a server-side Next.js API route (`/api/parse-food`); API key never exposed to the client bundle
-- [ ] **LLM-02**: LLM always returns a structured estimate — never asks clarifying questions, never returns an empty result; vague inputs receive `confidence: "low"`
-- [ ] **LLM-03**: Response includes structured per-item nutrition (name, portion, calories_kcal, protein_g, carbs_g, fat_g, fiber_g) and an overall confidence level (high/medium/low)
-- [ ] **LLM-04**: LLM response is validated with Zod against the defined schema; invalid responses are retried up to 2 times before returning a structured error
-- [ ] **LLM-05**: API errors (timeout, rate limit, schema failure after retries) preserve the user's raw input text so they can retry without re-entering
+- [x] **LLM-01**: Parsed by Gemini server-side (`/api/parse`); key never in client bundle (lazy client, CI grep check)
+- [x] **LLM-02**: Always returns a structured estimate; vague inputs get `confidence: "low"`
+- [x] **LLM-03**: Per-item nutrition (name, portion, kcal, protein, carbs, fat, fiber) + confidence
+- [x] **LLM-04**: Zod-validated; retried across model fallback chain (flash-lite primary → flash) before erroring
+- [x] **LLM-05**: Errors preserve raw input; overload (503/429) shows honest "busy, try again" message
 
 ### Correction Panel (CORR)
 
-- [ ] **CORR-01**: After LLM parse, a confirmation panel shows each food item as an individually editable row before saving — no entry is saved without user review
-- [ ] **CORR-02**: User can edit item name, portion detail, and individual macro numbers; manual number edits do not trigger an LLM re-call
-- [ ] **CORR-03**: Editing item name or portion/detail field triggers per-item LLM re-estimation via `/api/reestimate-item` (not a full meal re-parse); loading state applies to that row only, not the whole panel
-- [ ] **CORR-04**: User can add a new food item to the panel (text input, runs through LLM parse) or delete an individual item
-- [ ] **CORR-05**: Meal type (breakfast/lunch/dinner/snack) is shown in the panel and editable before save; auto-suggested based on time of day
-- [ ] **CORR-06**: Low-confidence estimates show a visual indicator on the panel header with the message "This estimate is rough — tap any item to adjust"
+- [x] **CORR-01**: Post-parse confirmation panel with individually editable rows; nothing saved without review
+- [x] **CORR-02**: Edit name, portion, and all macro numbers; manual edits don't trigger LLM re-call
+- [x] **CORR-04**: Add items ("add more" via LLM, or "+ add an item by hand") and delete items
+- [x] **CORR-05**: Meal type shown and editable; auto-suggested by IST time of day
+- [x] **CORR-06**: Low-confidence shows "Rough — tap a number to fix it"
+- [~] **CORR-03**: Per-item LLM re-estimation on name/portion edit — *not built; "add more" + manual edit covers the need. Revisit only if requested.*
 
 ### Meal Logging (LOG)
 
-- [ ] **LOG-01**: Saved entries store: user_id, logged_at (timestamp with timezone), meal_type, raw_input (text), food_items (JSONB array), total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, confidence, input_source (voice/text), edited (boolean)
-- [ ] **LOG-02**: User can delete any logged entry from the daily view with a confirmation step
-- [ ] **LOG-03**: User can reopen and edit any entry from today or yesterday using the same correction panel (FR-010/FR-011); edited entries show an "edited" label; undo toast (5 seconds) available immediately after save
+- [x] **LOG-01**: Entries store user_id, logged_at, meal_type, raw_input, food_items JSONB, dedicated total columns, confidence, input_source, edited
+- [x] **LOG-02**: Delete any logged entry from the daily view
+- [x] **LOG-03**: Edit any logged entry inline (pencil icon → same editing panel); edits recompute totals server-side and set `edited=true`
 
 ### Dashboard (DASH)
 
-- [ ] **DASH-01**: Dashboard is the first screen after login, showing today's date, total calories logged vs. goal, and macro progress indicators (protein, carbs, fat, fiber — each showing logged vs. goal)
-- [ ] **DASH-02**: Today's chronological meal list is shown on the dashboard; mic button and text input are accessible from this screen without any navigation
-- [ ] **DASH-03**: Yesterday's summary is accessible in one tap from the dashboard and shows the same layout (calorie total, macro breakdown, meal list with edit icons)
+- [x] **DASH-01**: Dashboard first screen after login: date, calories vs goal, macro progress with gram units
+- [x] **DASH-02**: Chronological meal list + prominent log box (mic + text) on dashboard
+- [x] **DASH-03**: Any past day reachable via ‹ › day navigation (`/dashboard?date=`); past days read-only
 
 ### Analytics (ANLT)
 
-- [ ] **ANLT-01**: Weekly analytics view shows: 7-day calorie bar chart with goal reference line, average macro breakdown for the week vs. goal, plain-language flags for any macro averaging >20% above or below the daily goal across the week, and logged day count for the past 7 days
+- [x] **ANLT-01**: 7-day calorie bar chart with goal line, avg/day, days logged, streak, average macros vs goal, most-eaten foods
+
+### Added during v1 (originally out of scope, pulled in by owner)
+
+- [x] **BODY-01**: Profile captures name, age, weight, height; live BMI with category
+- [x] **BODY-02**: Weight history (`weight_logs`, one entry/day) with "+ Log" bottom sheet and weekly trend chart (Recharts)
+- [x] **ACCT-01**: Delete account permanently (service-role admin delete; cascades all data)
+- [x] **DSGN-01**: NomLog Design System v1.0 — paper-like, OKLCH tokens, Fraunces + Inter, hairline dividers, lucide icons
+- [x] **PWA-01**: iOS home-screen shortcut support — safe-area insets, standalone mode, touch-action fixes
+
+---
+
+## v1.1 Requirements — AGREED, NOT YET BUILT
+
+Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
+
+### ASK — assistant grounded in user's data
+
+- [ ] **ASK-01**: An "Ask" surface (own tab/entry). Named "Ask"/"Coach" — never "Chat"
+- [ ] **ASK-02**: Free-text input always available; user can type any question
+- [ ] **ASK-03**: 3–4 suggested prompt chips alongside input (e.g. "What can I eat now?", "How's my week?", "Suggest a dinner"); tapping submits
+- [ ] **ASK-04**: Answers grounded in user's own data (compact summary of goals + today's intake + recent meals/weights); must not fabricate logged data
+- [ ] **ASK-05**: Rolling context window (~2–3 exchanges) so follow-ups work; older turns drop off to keep cost flat
+- [ ] **ASK-06**: Fresh session on leaving/returning — no long persisted chat history
+- [ ] **ASK-07**: Answers render as design-system answer cards, not a bubble thread
+- [ ] **ASK-08**: Reuses model fallback + honest "busy" messaging
+
+### TIPS — daily nudge
+
+- [ ] **TIP-01**: Daily tip card on dashboard: one personalized sentence from today's data
+- [ ] **TIP-02**: Generated max once/day, cached in DB
+- [ ] **TIP-03**: Brand voice: warm, witty, never clinical or naggy
+
+### WHAT-FITS — "What can I eat now?"
+
+- [ ] **FIT-01**: Given remaining calories + macros, suggest 2–3 specific Indian dishes/snacks that fit
+- [ ] **FIT-02**: On-demand (one call per tap); suggestions show name + rough kcal/macros
+- [ ] **FIT-03** *(nice-to-have)*: One-tap log a suggestion
+
+### RECAP — weekly narrative
+
+- [ ] **RCAP-01**: Short warm paragraph on the past 7 days (days logged, goal hits, weakest macro, encouragement) on Insights
+- [ ] **RCAP-02**: Generated once/week, cached
+
+### ANLT — analytics interactivity (owner request 2026-06-10)
+
+- [ ] **ANLT-02**: Tapping a day's bar in the 7-day chart opens that day's detail — meals + stats (navigate to `/dashboard?date=` or inline expand). Touch targets must be generous; current bars are not reliably tappable
+- [ ] **ANLT-03**: Monthly calendar view (beyond the 7-day window) — Apple-Fitness-style grid where each day is a colored marker:
+  - **Red**: calories clearly over goal
+  - **Green**: within ~±10% of goal
+  - **Yellow**: well under goal
+  - **Muted/empty**: nothing logged
+- [ ] **ANLT-04**: Tapping a calendar day opens that day's dashboard view
+- [ ] **ANLT-05**: Month navigation (previous/next month)
+
+### QLOG — quick re-log (zero-cost, low priority)
+
+- [ ] **QLOG-01**: One-tap re-log of a frequent/recent meal, no AI call
+
+### Cross-cutting (NFR)
+
+- [ ] **NFR-01**: All AI features server-side only; Gemini key never reaches client
+- [ ] **NFR-02**: Cost discipline — tips/recap cached, Ask rolling window, what-fits on-demand only
+- [ ] **NFR-03**: Only the signed-in user's RLS-scoped data
+- [ ] **NFR-04**: Design-system compliant
+
+**Suggested build order:** (1) TIP + FIT, (2) ANLT-02..05 (bar tap + calendar), (3) ASK, (4) RCAP, (5) QLOG.
 
 ---
 
 ## v2 Requirements
 
-Deferred to future release. Tracked but not in current roadmap.
+Still tracked, not scheduled.
 
-### Enhanced Input
-
-- **INPUT-V2-01**: User can photograph a meal and receive a Gemini Vision nutrition estimate
-- **INPUT-V2-02**: Quick-log mode for recurring meals (log same meal as yesterday, etc.)
-
-### Analytics & Insights
-
-- **ANLT-V2-01**: LLM-generated narrative insights for weekly analytics (not rule-based)
-- **ANLT-V2-02**: Multi-week trend analysis (beyond 7 days)
 - **ANLT-V2-03**: Export logs to CSV
-
-### Platform
-
-- **PLAT-V2-01**: Progressive Web App with offline queue — entries held locally and synced on reconnect
-- **PLAT-V2-02**: Push notification reminders (opt-in)
-- **PLAT-V2-03**: Habit/streak insights with nudge system
+- **PLAT-V2-03**: Habit/streak nudge system (partially covered by RECAP)
 
 ---
 
@@ -90,62 +144,22 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
+| Photo logging (Gemini Vision) | Dropped by owner decision 2026-06-10 |
+| Offline queue / PWA sync | Dropped by owner decision 2026-06-10 |
+| Push notification reminders | Dropped by owner decision 2026-06-10 |
 | Barcode scanner | Wrong product category — NomLog uses LLM estimation by design |
-| Weight / body metrics tracking | Different product domain entirely |
-| Social features / sharing logs | 2-user personal app; no audience for social |
-| Email/password auth | Eliminated all verification/reset flows by using Google OAuth only |
-| Conversational correction ("no, it was...") | Inline structured editing is faster and more reliable; stateful LLM conversation is complexity trap |
-| Verified nutritional label database | Incompatible with LLM estimation model; wrong product category |
-| Micronutrient tracking | Phase 3 at earliest; requires different data model |
-| Calorie burn / exercise logging | Different product domain; out of scope entirely |
-| TDEE calculator in onboarding | Friction with no payoff for a 2-user personal app |
-| Native mobile app (iOS/Android) | Web app serves use case; defer mobile native to v2+ |
+| Social features / sharing logs | Personal household app; no audience for social |
+| Email/password auth | Google OAuth only eliminates verification/reset flows |
+| Multi-turn persistent chat | Cost trap on free tier; Ask uses rolling window instead |
+| Verified nutritional label database | Incompatible with LLM estimation model |
+| Micronutrient tracking | Requires different data model |
+| Calorie burn / exercise logging | Different product domain |
+| TDEE calculator in onboarding | Friction with no payoff |
+| Native mobile app (iOS/Android) | Home-screen web shortcut serves the use case |
 
----
-
-## Traceability
-
-Populated during roadmap creation.
-
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| AUTH-01 | Phase 1 | Complete |
-| AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Complete |
-| AUTH-04 | Phase 1 | Complete |
-| AUTH-05 | Phase 1 | Complete |
-| GOAL-01 | Phase 3 | Pending |
-| GOAL-02 | Phase 3 | Pending |
-| GOAL-03 | Phase 4 | Pending |
-| INPUT-01 | Phase 3 | Pending |
-| INPUT-02 | Phase 3 | Pending |
-| INPUT-03 | Phase 3 | Pending |
-| INPUT-04 | Phase 3 | Pending |
-| LLM-01 | Phase 2 | Pending |
-| LLM-02 | Phase 2 | Pending |
-| LLM-03 | Phase 2 | Pending |
-| LLM-04 | Phase 2 | Pending |
-| LLM-05 | Phase 2 | Pending |
-| CORR-01 | Phase 3 | Pending |
-| CORR-02 | Phase 3 | Pending |
-| CORR-03 | Phase 3 | Pending |
-| CORR-04 | Phase 3 | Pending |
-| CORR-05 | Phase 3 | Pending |
-| CORR-06 | Phase 3 | Pending |
-| LOG-01 | Phase 3 | Pending |
-| LOG-02 | Phase 3 | Pending |
-| LOG-03 | Phase 4 | Pending |
-| DASH-01 | Phase 4 | Pending |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| ANLT-01 | Phase 5 | Pending |
-
-**Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 30 ✓
-- Unmapped: 0 ✓
+*(Note: weight/body tracking was originally out of scope but was pulled into v1 by owner request and shipped — see BODY-01/02.)*
 
 ---
 
 *Requirements defined: 2026-06-09*
-*Last updated: 2026-06-09 after initial definition*
+*Last updated: 2026-06-10 — v1 marked shipped; v1.1 scope agreed with owner (Ask, tips, what-fits, recap, analytics interactivity, monthly calendar)*
