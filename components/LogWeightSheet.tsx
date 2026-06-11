@@ -10,9 +10,10 @@ type Props = {
   name: string
   age: string
   heightCm: string
+  goalWeight: string
 }
 
-export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
+export function LogWeightSheet({ currentWeight, name, age, heightCm, goalWeight }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -23,6 +24,7 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
   const [nm, setNm] = useState(name)
   const [ag, setAg] = useState(age)
   const [ht, setHt] = useState(heightCm)
+  const [gw, setGw] = useState(goalWeight)
 
   async function save() {
     const w = Number(weight)
@@ -41,6 +43,7 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
           name: nm.trim() || null,
           age: ag.trim() ? Number(ag) : null,
           height_cm: ht.trim() ? Number(ht) : null,
+          goal_weight_kg: gw.trim() ? Number(gw) : null,
         }),
       })
       setOpen(false)
@@ -106,6 +109,17 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
                     inputMode="numeric"
                     value={ag}
                     onChange={(e) => setAg(e.target.value)}
+                    className="num field w-20 text-right text-[15px]"
+                  />
+                </label>
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-[13px] text-muted-foreground">Goal weight (kg)</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={gw}
+                    onChange={(e) => setGw(e.target.value)}
                     className="num field w-20 text-right text-[15px]"
                   />
                 </label>

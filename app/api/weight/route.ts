@@ -12,6 +12,7 @@ const BodySchema = z.object({
   name: z.string().max(80).nullable().optional(),
   age: z.number().int().min(0).max(130).nullable().optional(),
   height_cm: z.number().min(50).max(260).nullable().optional(),
+  goal_weight_kg: z.number().min(20).max(400).nullable().optional(),
 })
 
 export async function POST(request: Request) {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Enter a valid weight.' }, { status: 400 })
   }
 
-  const { weight_kg, name, age, height_cm } = parsed.data
+  const { weight_kg, name, age, height_cm, goal_weight_kg } = parsed.data
   const date = parsed.data.logged_on ?? todayYmd(await getUserTz())
   const supabase = await createClient()
 
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
   if (name !== undefined) profilePatch.name = name
   if (age !== undefined) profilePatch.age = age
   if (height_cm !== undefined) profilePatch.height_cm = height_cm
+  if (goal_weight_kg !== undefined) profilePatch.goal_weight_kg = goal_weight_kg
 
   const { error: pErr } = await supabase.from('user_profiles').upsert(profilePatch as never)
   if (pErr) {
@@ -50,4 +52,24 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ ok: true }, { status: 201 })
+}
+
+// DELETE /api/weight → remove one day's entry
+const DeleteSchema = z.object({ logged_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
+
+export async function DELETE(request: Request) {
+  const user = await verifySession()
+  if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
+
+  const body = await request.json().catch(() => null)
+  const parsed = DeleteSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: 'Invalid date.' }, { status: 400 })
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('weight_logs').delete().eq('logged_on', parsed.data.logged_on)
+  if (error) {
+    console.error('weight DELETE failed:', error)
+    return NextResponse.json({ error: 'Could not delete that entry.' }, { status: 500 })
+  }
+  return NextResponse.json({ ok: true })
 }

@@ -6,6 +6,8 @@ import { DailyTargets } from '@/components/DailyTargets'
 import { LogWeightSheet } from '@/components/LogWeightSheet'
 import { WeightChart } from '@/components/WeightChart'
 import { AccountActions } from '@/components/AccountActions'
+import { WeightHistory } from '@/components/WeightHistory'
+import { Download } from 'lucide-react'
 import { computeStats, weeklyWeightSeries, bmiInfo } from '@/lib/stats'
 import { DEFAULT_GOALS } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
@@ -111,6 +113,7 @@ export default async function ProfilePage() {
             name={name}
             age={str(profile?.age)}
             heightCm={str(profile?.height_cm)}
+            goalWeight={str(profile?.goal_weight_kg)}
           />
         </div>
 
@@ -132,6 +135,21 @@ export default async function ProfilePage() {
           )}
         </div>
 
+        {profile?.goal_weight_kg && currentWeight !== null && (
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            {Math.abs(currentWeight - Number(profile.goal_weight_kg)) <= 0.3 ? (
+              <span style={{ color: 'var(--color-success)' }}>At your goal weight ✓</span>
+            ) : (
+              <>
+                <span className="num font-medium text-foreground">
+                  {Math.abs(Math.round((currentWeight - Number(profile.goal_weight_kg)) * 10) / 10).toFixed(1)} kg
+                </span>{' '}
+                to your {Number(profile.goal_weight_kg).toFixed(1)} kg goal
+              </>
+            )}
+          </p>
+        )}
+
         <div className="mt-4">
           {series.length >= 2 ? (
             <WeightChart data={series.map((s) => ({ label: s.label, weight: s.weight }))} />
@@ -141,6 +159,8 @@ export default async function ProfilePage() {
             </p>
           )}
         </div>
+
+        <WeightHistory entries={[...weightRows].reverse().slice(0, 6).map((w) => ({ logged_on: w.logged_on, weight_kg: Number(w.weight_kg) }))} />
 
         <div className="mt-4 flex items-center gap-6 text-[13px]">
           <span className="text-muted-foreground">
@@ -169,7 +189,17 @@ export default async function ProfilePage() {
       <div className="divider my-7" />
 
       {/* Account */}
+      <a
+        href="/api/export"
+        className="flex items-center gap-3 py-2 text-[13px] text-foreground transition-opacity hover:opacity-70"
+      >
+        <Download className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} /> Export my data (CSV)
+      </a>
       <AccountActions />
+
+      <p className="mt-8 text-center text-[10px] text-muted-foreground/60">
+        nomlog · build {process.env.NEXT_PUBLIC_BUILD_SHA}
+      </p>
     </main>
   )
 }
