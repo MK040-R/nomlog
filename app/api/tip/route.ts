@@ -4,15 +4,17 @@ import { createClient } from '@/lib/supabase/server'
 import { generateDailyTip } from '@/lib/gemini/tip'
 import { GeminiBusyError } from '@/lib/gemini/generate'
 import { getTodaySummary } from '@/lib/today'
-import { istHourNow } from '@/lib/nutrition'
+import { hourNow } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
-// GET /api/tip → today's tip, generated at most once per IST day and cached.
+// GET /api/tip → today's tip, generated at most once per local day and cached.
 export async function GET() {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
 
+  const tz = await getUserTz()
   const supabase = await createClient()
-  const { ymd, goals, consumed, mealNames } = await getTodaySummary(supabase, user.id)
+  const { ymd, goals, consumed, mealNames } = await getTodaySummary(supabase, user.id, tz)
 
   const { data: cached } = await supabase
     .from('daily_tips')
@@ -22,7 +24,7 @@ export async function GET() {
   if (cached) return NextResponse.json({ tip: cached.tip, cached: true })
 
   try {
-    const tip = await generateDailyTip({ goals, consumed, mealNames, hourIst: istHourNow() })
+    const tip = await generateDailyTip({ goals, consumed, mealNames, hourLocal: hourNow(tz) })
 
     // Cache it. On a same-morning race the unique index keeps one row; losing
     // the race is fine — we still return the tip we generated.

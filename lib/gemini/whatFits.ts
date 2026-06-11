@@ -38,7 +38,7 @@ const responseSchema = {
 export type FitContext = {
   remaining: { calories: number; protein: number; carbs: number; fat: number; fiber: number }
   mealNames: string[]
-  hourIst: number
+  hourLocal: number
 }
 
 function buildPrompt(ctx: FitContext) {
@@ -47,7 +47,7 @@ function buildPrompt(ctx: FitContext) {
 
 Remaining for today: ${ctx.remaining.calories} kcal, ${ctx.remaining.protein}g protein, ${ctx.remaining.carbs}g carbs, ${ctx.remaining.fat}g fat, ${ctx.remaining.fiber}g fiber.
 ${eaten}
-It is currently ${ctx.hourIst}:00 IST.
+It is currently ${ctx.hourLocal}:00 in their local time.
 
 Suggest 2-3 specific Indian dishes or snacks (home-cooked or common) that fit the remaining budget and suit this time of day. Prefer filling gaps — e.g. if protein remaining is high, lean protein-rich. Vary from what they already ate.
 

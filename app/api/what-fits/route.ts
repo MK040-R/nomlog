@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { suggestWhatFits } from '@/lib/gemini/whatFits'
 import { GeminiBusyError } from '@/lib/gemini/generate'
 import { getTodaySummary } from '@/lib/today'
-import { istHourNow } from '@/lib/nutrition'
+import { hourNow } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 // POST /api/what-fits → 2-3 dishes that fit what's left of today's budget.
 // On-demand only: one Gemini call per tap, remaining computed server-side.
@@ -12,8 +13,9 @@ export async function POST() {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
 
+  const tz = await getUserTz()
   const supabase = await createClient()
-  const { goals, consumed, mealNames } = await getTodaySummary(supabase, user.id)
+  const { goals, consumed, mealNames } = await getTodaySummary(supabase, user.id, tz)
   const remaining = {
     calories: goals.calories - consumed.calories,
     protein: Math.max(0, goals.protein - consumed.protein),
@@ -23,7 +25,7 @@ export async function POST() {
   }
 
   try {
-    const suggestions = await suggestWhatFits({ remaining, mealNames, hourIst: istHourNow() })
+    const suggestions = await suggestWhatFits({ remaining, mealNames, hourLocal: hourNow(tz) })
     return NextResponse.json({ remaining, suggestions })
   } catch (err) {
     console.error('what-fits failed:', err)

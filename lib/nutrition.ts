@@ -21,42 +21,98 @@ function round1(n: number) {
   return Math.round(n * 10) / 10
 }
 
-// The household is in India — log days run on IST (UTC+5:30, no DST).
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+// ---------------------------------------------------------------------------
+// Timezone-aware date helpers.
+// Log days run on the USER's local timezone (IANA name from the nomlog_tz
+// cookie, synced by <TimezoneSync/>). Asia/Kolkata is the fallback for
+// requests that arrive before the cookie exists.
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_TZ = 'Asia/Kolkata'
+
+/** A usable IANA timezone, falling back to DEFAULT_TZ for anything invalid. */
+export function normalizeTz(tz: string | null | undefined): string {
+  if (!tz) return DEFAULT_TZ
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return tz
+  } catch {
+    return DEFAULT_TZ
+  }
+}
+
+/** The zone's UTC offset (ms) at a given instant — DST-aware. */
+function offsetMs(tz: string, at: Date): number {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(at)
+      .map((p) => [p.type, p.value])
+  )
+  const asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second)
+  return asUtc - Math.floor(at.getTime() / 1000) * 1000
+}
+
+/** The UTC instant of local midnight on a YYYY-MM-DD in the given zone. */
+function zonedMidnightUtc(ymd: string, tz: string): Date {
+  const localAsUtc = new Date(ymd + 'T00:00:00Z').getTime()
+  // Two passes so a DST transition between guess and answer still resolves.
+  let instant = localAsUtc - offsetMs(tz, new Date(localAsUtc))
+  instant = localAsUtc - offsetMs(tz, new Date(instant))
+  return new Date(instant)
+}
 
 /**
- * Given an optional YYYY-MM-DD (interpreted in IST), return that day's
- * UTC start/end instants for querying logged_at, plus the resolved date string.
- * Defaults to "today" in IST.
+ * Given an optional YYYY-MM-DD (interpreted in the user's zone), return that
+ * day's UTC start/end instants for querying logged_at, plus the resolved date
+ * string. Defaults to "today" in that zone. DST days (23h/25h) are handled.
  */
-export function istDayRange(dateStr?: string) {
-  const nowIst = new Date(Date.now() + IST_OFFSET_MS)
-  const ymd = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr : nowIst.toISOString().slice(0, 10)
-  const startUtc = new Date(new Date(ymd + 'T00:00:00Z').getTime() - IST_OFFSET_MS)
-  const endUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000)
-  return { ymd, startIso: startUtc.toISOString(), endIso: endUtc.toISOString() }
+export function dayRange(tz: string, dateStr?: string) {
+  const ymd = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? dateStr : todayYmd(tz)
+  const start = zonedMidnightUtc(ymd, tz)
+  const end = zonedMidnightUtc(shiftYmd(ymd, 1), tz)
+  return { ymd, startIso: start.toISOString(), endIso: end.toISOString() }
 }
 
-/** "Today" as YYYY-MM-DD in IST. */
-export function istToday() {
-  return new Date(Date.now() + IST_OFFSET_MS).toISOString().slice(0, 10)
+/** "Today" as YYYY-MM-DD in the user's zone. */
+export function todayYmd(tz: string) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(
+    new Date()
+  )
 }
 
-/** The IST calendar day (YYYY-MM-DD) a given timestamp falls on. */
-export function istYmdOf(iso: string) {
-  return new Date(new Date(iso).getTime() + IST_OFFSET_MS).toISOString().slice(0, 10)
+/** The calendar day (YYYY-MM-DD) a given timestamp falls on in the user's zone. */
+export function ymdOf(tz: string, iso: string) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(
+    new Date(iso)
+  )
 }
 
-/** Shift a YYYY-MM-DD by N days (positive or negative). */
+/** Current hour (0-23) in the user's zone. */
+export function hourNow(tz: string) {
+  return Number(
+    new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', hourCycle: 'h23' }).format(new Date())
+  )
+}
+
+/** Shift a YYYY-MM-DD by N days (positive or negative) — pure date math. */
 export function shiftYmd(ymd: string, days: number) {
   const d = new Date(ymd + 'T00:00:00Z')
   d.setUTCDate(d.getUTCDate() + days)
   return d.toISOString().slice(0, 10)
 }
 
-/** The last N days as YYYY-MM-DD, oldest first, ending today (IST). */
-export function lastNDays(n: number) {
-  const today = istToday()
+/** The last N days as YYYY-MM-DD, oldest first, ending today in the user's zone. */
+export function lastNDays(tz: string, n: number) {
+  const today = todayYmd(tz)
   return Array.from({ length: n }, (_, i) => shiftYmd(today, -(n - 1 - i)))
 }
 
@@ -68,17 +124,12 @@ export function weekdayShort(ymd: string) {
   })
 }
 
-/** The meal type a fresh log most likely is, by IST hour (mirrors CORR-05). */
-export function mealTypeForIstHour(h: number): MealType {
+/** The meal type a fresh log most likely is, by local hour (mirrors CORR-05). */
+export function mealTypeForHour(h: number): MealType {
   if (h < 11) return 'breakfast'
   if (h < 16) return 'lunch'
   if (h < 19) return 'snack'
   return 'dinner'
-}
-
-/** Current hour (0-23) in IST — safe on client and server. */
-export function istHourNow() {
-  return new Date(Date.now() + IST_OFFSET_MS).getUTCHours()
 }
 
 /** Default goals when the user hasn't set their own yet. */

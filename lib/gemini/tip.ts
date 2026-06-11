@@ -15,7 +15,7 @@ export type TipContext = {
   goals: { calories: number; protein: number; carbs: number; fat: number; fiber: number }
   consumed: { calories: number; protein: number; carbs: number; fat: number; fiber: number }
   mealNames: string[]
-  hourIst: number
+  hourLocal: number
 }
 
 function buildPrompt(ctx: TipContext) {
@@ -27,7 +27,7 @@ function buildPrompt(ctx: TipContext) {
 The user's daily targets: ${ctx.goals.calories} kcal, ${ctx.goals.protein}g protein, ${ctx.goals.carbs}g carbs, ${ctx.goals.fat}g fat, ${ctx.goals.fiber}g fiber.
 Eaten so far today: ${ctx.consumed.calories} kcal, ${ctx.consumed.protein}g protein, ${ctx.consumed.carbs}g carbs, ${ctx.consumed.fat}g fat, ${ctx.consumed.fiber}g fiber.
 ${eaten}
-It is currently ${ctx.hourIst}:00 IST.
+It is currently ${ctx.hourLocal}:00 in their local time.
 
 Write ONE personalised sentence (under 26 words) reacting to their day so far — a gentle observation or suggestion grounded ONLY in the numbers and foods above. Indian food references welcome. Do not invent foods they didn't log. Do not mention being an AI.`
 }

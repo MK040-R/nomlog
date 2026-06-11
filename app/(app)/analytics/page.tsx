@@ -5,12 +5,13 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   lastNDays,
-  istDayRange,
-  istYmdOf,
+  dayRange,
+  ymdOf,
   weekdayShort,
-  istToday,
+  todayYmd,
   DEFAULT_GOALS,
 } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem } from '@/types/app.types'
 import { WeeklyRecap } from '@/components/WeeklyRecap'
 
@@ -31,19 +32,20 @@ export default async function AnalyticsPage({
   if (!user) redirect('/login')
 
   const { month: monthParam } = await searchParams
+  const tz = await getUserTz()
   const supabase = await createClient()
-  const days = lastNDays(7)
-  const { startIso } = istDayRange(days[0])
-  const { endIso } = istDayRange(days[6])
+  const days = lastNDays(tz, 7)
+  const { startIso } = dayRange(tz, days[0])
+  const { endIso } = dayRange(tz, days[6])
 
-  // Month view: defaults to the current IST month, never navigates past it.
-  const curMonth = istToday().slice(0, 7)
+  // Month view: defaults to the current month in the user's zone, never navigates past it.
+  const curMonth = todayYmd(tz).slice(0, 7)
   const month =
     monthParam && /^\d{4}-\d{2}$/.test(monthParam) && monthParam <= curMonth ? monthParam : curMonth
   const [mYear, mMon] = month.split('-').map(Number)
   const daysInMonth = new Date(Date.UTC(mYear, mMon, 0)).getUTCDate()
-  const monthStartIso = istDayRange(`${month}-01`).startIso
-  const monthEndIso = istDayRange(`${month}-${String(daysInMonth).padStart(2, '0')}`).endIso
+  const monthStartIso = dayRange(tz, `${month}-01`).startIso
+  const monthEndIso = dayRange(tz, `${month}-${String(daysInMonth).padStart(2, '0')}`).endIso
 
   const [{ data: meals }, { data: profile }, { data: monthMeals }] = await Promise.all([
     supabase
@@ -72,7 +74,7 @@ export default async function AnalyticsPage({
   const byDay: Record<string, DayTotals> = {}
   for (const d of days) byDay[d] = { cal: 0, p: 0, c: 0, f: 0, fib: 0, count: 0 }
   for (const m of rows) {
-    const d = istYmdOf(m.logged_at)
+    const d = ymdOf(tz, m.logged_at)
     if (!byDay[d]) continue
     byDay[d].cal += m.total_calories
     byDay[d].p += Number(m.total_protein_g)
@@ -114,12 +116,12 @@ export default async function AnalyticsPage({
   const scale = Math.max(goalCals, ...days.map((d) => byDay[d].cal), 1)
   const goalY = Math.round((goalCals / scale) * chartH)
 
-  const today = istToday()
+  const today = todayYmd(tz)
 
-  // Month calendar: calories per IST day
+  // Month calendar: calories per local day
   const calByDay: Record<string, number> = {}
   for (const m of monthMeals ?? []) {
-    const d = istYmdOf(m.logged_at)
+    const d = ymdOf(tz, m.logged_at)
     calByDay[d] = (calByDay[d] ?? 0) + m.total_calories
   }
   const firstDow = (new Date(month + '-01T00:00:00Z').getUTCDay() + 6) % 7 // Monday = 0

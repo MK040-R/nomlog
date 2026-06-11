@@ -35,7 +35,7 @@ Their last 7 days:
 Write ONE short paragraph (3-4 sentences, under 80 words): how the week went, the one thing to nudge (the weak macro or logging consistency — pick what matters most), and end encouraging. Ground every claim in the numbers above; never invent foods or numbers.`
 }
 
-/** One warm paragraph about the past week. Cached per IST week by the caller. */
+/** One warm paragraph about the past week. Cached per local week by the caller. */
 export async function generateWeeklyRecap(ctx: RecapContext): Promise<string> {
   const { recap } = await generateStructured({
     prompt: buildPrompt(ctx),

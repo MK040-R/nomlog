@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RotateCcw } from 'lucide-react'
 import type { FoodItem } from '@/types/app.types'
-import { mealTypeForIstHour, istHourNow } from '@/lib/nutrition'
+import { mealTypeForHour } from '@/lib/nutrition'
 
 export type RelogOption = { label: string; kcal: number; items: FoodItem[] }
 
@@ -26,7 +26,7 @@ export function QuickRelog({ options }: { options: RelogOption[] }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          meal_type: mealTypeForIstHour(istHourNow()),
+          meal_type: mealTypeForHour(new Date().getHours()), // browser local time
           raw_input: `Logged again: ${opt.label}`,
           input_source: 'text',
           confidence: 'high',

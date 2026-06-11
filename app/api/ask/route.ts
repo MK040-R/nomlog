@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { askCoach } from '@/lib/gemini/ask'
 import { GeminiBusyError } from '@/lib/gemini/generate'
 import { getTodaySummary } from '@/lib/today'
-import { istDayRange, istYmdOf, istHourNow, lastNDays } from '@/lib/nutrition'
+import { dayRange, ymdOf, hourNow, lastNDays } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 // POST /api/ask → one grounded coach answer.
 // The rolling window lives on the client (ASK-05/06): it sends up to the last
@@ -29,13 +30,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Ask me something about your food.' }, { status: 400 })
   }
 
+  const tz = await getUserTz()
   const supabase = await createClient()
-  const days = lastNDays(7)
-  const { startIso } = istDayRange(days[0])
-  const { endIso } = istDayRange(days[6])
+  const days = lastNDays(tz, 7)
+  const { startIso } = dayRange(tz, days[0])
+  const { endIso } = dayRange(tz, days[6])
 
   const [summary, { data: weekMeals }, { data: weights }] = await Promise.all([
-    getTodaySummary(supabase, user.id),
+    getTodaySummary(supabase, user.id, tz),
     supabase
       .from('meal_logs')
       .select('logged_at, total_calories')
@@ -50,7 +52,7 @@ export async function POST(request: Request) {
 
   const calByDay: Record<string, number> = {}
   for (const m of weekMeals ?? []) {
-    const d = istYmdOf(m.logged_at)
+    const d = ymdOf(tz, m.logged_at)
     calByDay[d] = (calByDay[d] ?? 0) + m.total_calories
   }
   const weekLines = days.map((d) => `${d}: ${calByDay[d] ? `${calByDay[d]} kcal` : 'nothing logged'}`)
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
       goals: summary.goals,
       consumed: summary.consumed,
       mealNames: summary.mealNames,
-      hourIst: istHourNow(),
+      hourLocal: hourNow(tz),
       weekLines,
       weightLines,
       history: parsed.data.history,

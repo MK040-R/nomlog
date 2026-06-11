@@ -2,15 +2,15 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database.types'
 import type { FoodItem } from '@/types/app.types'
-import { istDayRange, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, DEFAULT_GOALS } from '@/lib/nutrition'
 
 /**
- * Goals, consumed totals and meal names for the current IST day.
+ * Goals, consumed totals and meal names for the current day in the user's zone.
  * Shared by the dashboard-adjacent AI routes (tip, what-fits) so they all
  * ground in the same numbers the dashboard shows.
  */
-export async function getTodaySummary(supabase: SupabaseClient<Database>, userId: string) {
-  const { startIso, endIso, ymd } = istDayRange()
+export async function getTodaySummary(supabase: SupabaseClient<Database>, userId: string, tz: string) {
+  const { startIso, endIso, ymd } = dayRange(tz)
 
   const [{ data: meals }, { data: profile }] = await Promise.all([
     supabase

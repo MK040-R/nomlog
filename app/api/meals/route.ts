@@ -3,15 +3,16 @@ import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { FoodItemSchema } from '@/lib/gemini/parse'
-import { sumItems, istDayRange } from '@/lib/nutrition'
+import { sumItems, dayRange } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
-// GET /api/meals?date=YYYY-MM-DD  → meals logged on that IST day (default: today)
+// GET /api/meals?date=YYYY-MM-DD  → meals logged on that local day (default: today)
 export async function GET(request: Request) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
 
   const date = new URL(request.url).searchParams.get('date') ?? undefined
-  const { startIso, endIso, ymd } = istDayRange(date)
+  const { startIso, endIso, ymd } = dayRange(await getUserTz(), date)
 
   const supabase = await createClient()
   const { data, error } = await supabase

@@ -3,15 +3,17 @@ import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { generateWeeklyRecap } from '@/lib/gemini/recap'
 import { GeminiBusyError } from '@/lib/gemini/generate'
-import { istDayRange, istYmdOf, istToday, shiftYmd, lastNDays, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, ymdOf, todayYmd, shiftYmd, lastNDays, DEFAULT_GOALS } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 // GET /api/recap → a paragraph on the past 7 days, generated at most once per
-// IST week (keyed on that week's Monday) and cached.
+// local week (keyed on that week's Monday in the user's zone) and cached.
 export async function GET() {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
 
-  const today = istToday()
+  const tz = await getUserTz()
+  const today = todayYmd(tz)
   const weekStart = shiftYmd(today, -((new Date(today + 'T00:00:00Z').getUTCDay() + 6) % 7))
 
   const supabase = await createClient()
@@ -22,9 +24,9 @@ export async function GET() {
     .maybeSingle()
   if (cached) return NextResponse.json({ recap: cached.recap, cached: true })
 
-  const days = lastNDays(7)
-  const { startIso } = istDayRange(days[0])
-  const { endIso } = istDayRange(days[6])
+  const days = lastNDays(tz, 7)
+  const { startIso } = dayRange(tz, days[0])
+  const { endIso } = dayRange(tz, days[6])
   const [{ data: meals }, { data: profile }] = await Promise.all([
     supabase
       .from('meal_logs')
@@ -49,7 +51,7 @@ export async function GET() {
   const byDay: Record<string, { cal: number; p: number; c: number; f: number; fib: number }> = {}
   const foodCount: Record<string, number> = {}
   for (const m of rows) {
-    const d = istYmdOf(m.logged_at)
+    const d = ymdOf(tz, m.logged_at)
     byDay[d] ??= { cal: 0, p: 0, c: 0, f: 0, fib: 0 }
     byDay[d].cal += m.total_calories
     byDay[d].p += Number(m.total_protein_g)

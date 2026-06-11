@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import type { FoodItem } from '@/types/app.types'
-import { mealTypeForIstHour, istHourNow } from '@/lib/nutrition'
+import { mealTypeForHour } from '@/lib/nutrition'
 
 type Suggestion = FoodItem & { reason: string }
 
@@ -51,7 +51,7 @@ export function WhatFits() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          meal_type: mealTypeForIstHour(istHourNow()),
+          meal_type: mealTypeForHour(new Date().getHours()), // browser local time
           raw_input: `Suggested: ${s.name}`,
           input_source: 'text',
           confidence: 'medium',

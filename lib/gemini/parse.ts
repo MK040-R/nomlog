@@ -51,8 +51,7 @@ const responseSchema = {
   required: ['meal_type', 'confidence', 'items'],
 }
 
-function buildPrompt(text: string) {
-  const hourIst = new Date(Date.now() + 5.5 * 60 * 60 * 1000).getUTCHours()
+function buildPrompt(text: string, hourLocal: number) {
   return `You estimate nutrition for an Indian household food log. The user said what they ate, casually and often in Indian-English with local dish names (e.g. "two rotis with dal and a bowl of curd", "masala dosa", "filter coffee", "paneer butter masala with naan").
 
 Break it into individual food items. For each item give:
@@ -70,7 +69,7 @@ Rules:
 - Plain water or other zero-calorie drinks ARE consumed drinks: include them as items with 0 values, not an empty array.
 - Use typical Indian home-cooked portions and recipes unless the user says otherwise.
 - If quantity is vague, assume a normal single serving.
-- meal_type: infer from the food and that it's currently hour ${hourIst}:00 IST. Breakfast items + morning → breakfast; light items between meals → snack; otherwise lunch/dinner by time.
+- meal_type: infer from the food and that it's currently ${hourLocal}:00 in the user's local time. Breakfast items + morning → breakfast; light items between meals → snack; otherwise lunch/dinner by time.
 - confidence: "high" if portions were specific, "medium" if you estimated portions, "low" if the input was very vague.
 - Numbers only — no ranges, no units inside the numeric fields.
 
@@ -79,11 +78,12 @@ User said: "${text}"`
 
 /**
  * Parse a free-text meal description into structured items + nutrition.
+ * hourLocal (0-23, user's zone) steers the meal_type guess.
  * Uses the shared model fallback chain; throws GeminiBusyError if overloaded.
  */
-export async function parseMeal(text: string): Promise<ParsedMeal> {
+export async function parseMeal(text: string, hourLocal: number): Promise<ParsedMeal> {
   return generateStructured({
-    prompt: buildPrompt(text),
+    prompt: buildPrompt(text, hourLocal),
     responseSchema,
     schema: ParsedMealSchema,
     temperature: 0.2,

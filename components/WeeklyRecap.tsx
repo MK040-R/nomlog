@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 
-// The week in one warm paragraph, generated once per IST week (server caches).
+// The week in one warm paragraph, generated once per local week (server caches).
 // Renders nothing while loading or when unavailable.
 export function WeeklyRecap() {
   const [recap, setRecap] = useState<string | null>(null)

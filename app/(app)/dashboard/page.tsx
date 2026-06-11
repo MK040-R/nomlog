@@ -8,7 +8,8 @@ import { MealCard } from '@/components/MealCard'
 import { DailyTip } from '@/components/DailyTip'
 import { WhatFits } from '@/components/WhatFits'
 import { QuickRelog, type RelogOption } from '@/components/QuickRelog'
-import { istDayRange, istToday, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, todayYmd, hourNow, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem } from '@/types/app.types'
 
 export default async function DashboardPage({
@@ -20,10 +21,11 @@ export default async function DashboardPage({
   if (!user) redirect('/login')
 
   const { date: dateParam } = await searchParams
+  const tz = await getUserTz()
   const supabase = await createClient()
-  const { startIso, endIso, ymd } = istDayRange(dateParam)
-  if (ymd > istToday()) redirect('/dashboard')
-  const isToday = ymd === istToday()
+  const { startIso, endIso, ymd } = dayRange(tz, dateParam)
+  if (ymd > todayYmd(tz)) redirect('/dashboard')
+  const isToday = ymd === todayYmd(tz)
 
   const [{ data: meals }, { data: profile }, { data: recentMeals }] = await Promise.all([
     supabase
@@ -38,7 +40,7 @@ export default async function DashboardPage({
       ? supabase
           .from('meal_logs')
           .select('food_items, total_calories, logged_at')
-          .gte('logged_at', istDayRange(shiftYmd(istToday(), -14)).startIso)
+          .gte('logged_at', dayRange(tz, shiftYmd(ymd, -14)).startIso)
           .lt('logged_at', endIso)
           .order('logged_at', { ascending: false })
           .limit(60)
@@ -97,7 +99,7 @@ export default async function DashboardPage({
   })
   const prevHref = `/dashboard?date=${shiftYmd(ymd, -1)}`
   const nextDay = shiftYmd(ymd, 1)
-  const nextHref = nextDay > istToday() ? null : `/dashboard?date=${nextDay}`
+  const nextHref = nextDay > todayYmd(tz) ? null : `/dashboard?date=${nextDay}`
 
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
@@ -121,7 +123,7 @@ export default async function DashboardPage({
 
       {/* Greeting */}
       <h1 className="mt-8 font-display text-[22px] font-medium leading-tight text-foreground">
-        {isToday ? `${greeting()}, ${displayName}` : 'Looking back'}
+        {isToday ? `${greeting(hourNow(tz))}, ${displayName}` : 'Looking back'}
       </h1>
       {isToday && <DailyTip />}
 
@@ -226,8 +228,7 @@ function Macro({ label, value, goal }: { label: string; value: number; goal: num
   )
 }
 
-function greeting() {
-  const h = new Date(Date.now() + 5.5 * 60 * 60 * 1000).getUTCHours()
+function greeting(h: number) {
   if (h < 12) return 'Good morning'
   if (h < 17) return 'Good afternoon'
   return 'Good evening'

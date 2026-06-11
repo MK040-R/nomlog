@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
-import { istToday } from '@/lib/nutrition'
+import { todayYmd } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 const BodySchema = z.object({
   weight_kg: z.number().min(20).max(400),
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
   }
 
   const { weight_kg, name, age, height_cm } = parsed.data
-  const date = parsed.data.logged_on ?? istToday()
+  const date = parsed.data.logged_on ?? todayYmd(await getUserTz())
   const supabase = await createClient()
 
   // One weight entry per day — upsert.

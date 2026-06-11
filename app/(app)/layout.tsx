@@ -1,6 +1,7 @@
 import { verifySession } from '@/lib/dal'
 import { redirect } from 'next/navigation'
 import { BottomNav } from '@/components/BottomNav'
+import { TimezoneSync } from '@/components/TimezoneSync'
 
 export default async function AppLayout({
   children,
@@ -18,6 +19,7 @@ export default async function AppLayout({
       className="min-h-dvh bg-background"
       style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
     >
+      <TimezoneSync />
       {children}
       <BottomNav />
     </div>

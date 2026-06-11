@@ -1,25 +1,26 @@
-import { istYmdOf, istToday, shiftYmd } from './nutrition'
+import { ymdOf, todayYmd, shiftYmd } from './nutrition'
 
 /**
  * Headline profile stats derived from meal history.
- * - daysLogged: distinct IST days with at least one meal
+ * - daysLogged: distinct local days with at least one meal
  * - streak: consecutive days (ending today, or yesterday if today is empty) with a log
  * - onGoalPct: share of logged days whose calories were at or under the goal
  */
 export function computeStats(
   meals: { logged_at: string; total_calories: number }[],
-  goalCalories: number
+  goalCalories: number,
+  tz: string
 ) {
   const byDay = new Map<string, number>()
   for (const m of meals) {
-    const d = istYmdOf(m.logged_at)
+    const d = ymdOf(tz, m.logged_at)
     byDay.set(d, (byDay.get(d) ?? 0) + m.total_calories)
   }
 
   const daysLogged = byDay.size
 
   let streak = 0
-  let cursor = istToday()
+  let cursor = todayYmd(tz)
   if (!byDay.has(cursor)) cursor = shiftYmd(cursor, -1) // today not logged yet — don't break the streak
   while (byDay.has(cursor)) {
     streak++

@@ -8,6 +8,7 @@ import { WeightChart } from '@/components/WeightChart'
 import { AccountActions } from '@/components/AccountActions'
 import { computeStats, weeklyWeightSeries, bmiInfo } from '@/lib/stats'
 import { DEFAULT_GOALS } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 export default async function ProfilePage() {
   const user = await verifySession()
@@ -21,7 +22,7 @@ export default async function ProfilePage() {
   ])
 
   const goalCalories = profile?.goal_calories ?? DEFAULT_GOALS.goal_calories
-  const stats = computeStats(meals ?? [], goalCalories)
+  const stats = computeStats(meals ?? [], goalCalories, await getUserTz())
 
   const weightRows = weights ?? []
   const series = weeklyWeightSeries(weightRows)

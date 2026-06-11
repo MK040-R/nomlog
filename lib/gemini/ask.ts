@@ -17,8 +17,8 @@ export type AskContext = {
   goals: { calories: number; protein: number; carbs: number; fat: number; fiber: number }
   consumed: { calories: number; protein: number; carbs: number; fat: number; fiber: number }
   mealNames: string[]
-  hourIst: number
-  /** Last 7 IST days, oldest first: "2026-06-05: 1430 kcal" or 0 when empty. */
+  hourLocal: number
+  /** Last 7 local days, oldest first: "2026-06-05: 1430 kcal" or 0 when empty. */
   weekLines: string[]
   /** Up to 3 recent weights, newest first: "78.0 kg on 2026-06-11". */
   weightLines: string[]
@@ -35,7 +35,7 @@ function buildPrompt(ctx: AskContext) {
 
 THEIR DATA — the ONLY facts you may use about them. Never invent meals, numbers, weights or history beyond this:
 - Daily targets: ${ctx.goals.calories} kcal, ${ctx.goals.protein}g protein, ${ctx.goals.carbs}g carbs, ${ctx.goals.fat}g fat, ${ctx.goals.fiber}g fiber
-- Today so far (it is ${ctx.hourIst}:00 IST): ${ctx.consumed.calories} kcal, ${ctx.consumed.protein}g protein, ${ctx.consumed.carbs}g carbs, ${ctx.consumed.fat}g fat, ${ctx.consumed.fiber}g fiber — eaten: ${eaten}
+- Today so far (it is ${ctx.hourLocal}:00 their local time): ${ctx.consumed.calories} kcal, ${ctx.consumed.protein}g protein, ${ctx.consumed.carbs}g carbs, ${ctx.consumed.fat}g fat, ${ctx.consumed.fiber}g fiber — eaten: ${eaten}
 - Last 7 days: ${ctx.weekLines.join('; ')}
 - Recent weights: ${ctx.weightLines.length ? ctx.weightLines.join('; ') : 'none logged'}
 ${convo}
