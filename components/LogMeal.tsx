@@ -23,7 +23,8 @@ const BLANK: FoodItem = {
   fiber_g: 0,
 }
 
-export function LogMeal() {
+// `date` (YYYY-MM-DD) logs the meal onto that past day instead of now.
+export function LogMeal({ date }: { date?: string }) {
   const router = useRouter()
   const [text, setText] = useState('')
   const [status, setStatus] = useState<'idle' | 'parsing' | 'confirming' | 'saving'>('idle')
@@ -98,6 +99,7 @@ export function LogMeal() {
           confidence,
           edited,
           items,
+          date,
         }),
       })
       const data = await res.json()

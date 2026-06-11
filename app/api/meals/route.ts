@@ -38,7 +38,13 @@ const SaveMealSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']).optional(),
   edited: z.boolean().optional(),
   items: z.array(FoodItemSchema).min(1),
+  // optional past day (YYYY-MM-DD, user's zone) to backfill a meal onto
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
+
+// Typical local hour per meal type — places backfilled meals sensibly in the
+// day's chronological list.
+const MEAL_HOUR = { breakfast: 9, lunch: 13, snack: 17, dinner: 20 } as const
 
 export async function POST(request: Request) {
   const user = await verifySession()
@@ -50,14 +56,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'That meal looks incomplete.' }, { status: 400 })
   }
 
-  const { items, ...rest } = parsed.data
+  const { items, date, ...rest } = parsed.data
   const totals = sumItems(items)
+
+  // Backfilling a past day: timestamp the meal at that day's typical hour.
+  let loggedAt: string | undefined
+  if (date) {
+    const tz = await getUserTz()
+    const { ymd, startIso } = dayRange(tz, date)
+    if (ymd > dayRange(tz).ymd) {
+      return NextResponse.json({ error: "Can't log meals in the future." }, { status: 400 })
+    }
+    loggedAt = new Date(new Date(startIso).getTime() + MEAL_HOUR[rest.meal_type] * 3600_000).toISOString()
+  }
 
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('meal_logs')
     .insert({
       user_id: user.id,
+      ...(loggedAt ? { logged_at: loggedAt } : {}),
       meal_type: rest.meal_type,
       raw_input: rest.raw_input ?? null,
       input_source: rest.input_source,

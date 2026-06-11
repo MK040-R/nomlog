@@ -162,25 +162,23 @@ export default async function DashboardPage({
         <Macro label="Fiber" value={consumed.fiber} goal={goals.fiber} />
       </section>
 
-      {isToday && (
-        <>
-          <div className="divider my-7" />
-          <section>
-            <span className="eyebrow">Log a meal</span>
-            <div className="mt-4">
-              <LogMeal />
-            </div>
-            {relogOptions.length > 0 && (
-              <div className="mt-4">
-                <QuickRelog options={relogOptions} />
-              </div>
-            )}
-            <div className="mt-4">
-              <WhatFits />
-            </div>
-          </section>
-        </>
-      )}
+      <div className="divider my-7" />
+      <section>
+        <span className="eyebrow">{isToday ? 'Log a meal' : `Log a meal for ${dateLabel}`}</span>
+        <div className="mt-4">
+          <LogMeal date={isToday ? undefined : ymd} />
+        </div>
+        {isToday && relogOptions.length > 0 && (
+          <div className="mt-4">
+            <QuickRelog options={relogOptions} />
+          </div>
+        )}
+        {isToday && (
+          <div className="mt-4">
+            <WhatFits />
+          </div>
+        )}
+      </section>
 
       <div className="divider my-7" />
 
