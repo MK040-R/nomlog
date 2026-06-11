@@ -23,6 +23,7 @@ export const metadata: Metadata = {
   description: 'Know what you ate. See how it adds up.',
   // When added to the iOS home screen, open as a standalone app
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'NomLog' },
+  icons: { apple: '/apple-touch-icon.png', icon: '/icon.svg' },
 }
 
 export const viewport: Viewport = {

@@ -11,6 +11,9 @@ export async function fetchJson<T = Record<string, unknown>>(
   input: RequestInfo,
   init?: RequestInit
 ): Promise<T> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error("You're offline — check your connection and try again.")
+  }
   const res = await fetch(input, init)
   const data = await res.json().catch(() => null)
 
