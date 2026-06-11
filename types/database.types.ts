@@ -101,6 +101,44 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['weekly_recaps']['Insert']>
         Relationships: []
       }
+      favorite_meals: {
+        Row: {
+          id: string
+          user_id: string
+          sig: string
+          label: string
+          items: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          sig: string
+          label: string
+          items?: Json
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['favorite_meals']['Insert']>
+        Relationships: []
+      }
+      water_logs: {
+        Row: {
+          id: string
+          user_id: string
+          logged_on: string
+          glasses: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          logged_on: string
+          glasses?: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['water_logs']['Insert']>
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           id: string
@@ -114,6 +152,7 @@ export type Database = {
           goal_carbs_g: number | null
           goal_fat_g: number | null
           goal_fiber_g: number | null
+          goal_weight_kg: number | null
         }
         Insert: {
           id: string
@@ -127,6 +166,7 @@ export type Database = {
           goal_carbs_g?: number | null
           goal_fat_g?: number | null
           goal_fiber_g?: number | null
+          goal_weight_kg?: number | null
         }
         Update: Partial<Database['public']['Tables']['user_profiles']['Insert']>
         Relationships: []

@@ -1,10 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { fetchJson } from '@/lib/fetchJson'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mic, Square, X } from 'lucide-react'
 import type { FoodItem, MealType } from '@/types/app.types'
+import { fetchJson } from '@/lib/fetchJson'
+import { useSpeechInput } from '@/lib/useSpeechInput'
 
 type Parsed = {
   meal_type: MealType
@@ -25,12 +26,13 @@ const BLANK: FoodItem = {
 }
 
 // `date` (YYYY-MM-DD) logs the meal onto that past day instead of now.
-export function LogMeal({ date }: { date?: string }) {
+// `recentItems` powers the add-by-hand picker with foods they actually eat.
+export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems?: FoodItem[] }) {
   const router = useRouter()
   const [text, setText] = useState('')
   const [status, setStatus] = useState<'idle' | 'parsing' | 'confirming' | 'saving'>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [listening, setListening] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const [items, setItems] = useState<FoodItem[]>([])
   const [mealType, setMealType] = useState<MealType>('snack')
@@ -40,13 +42,34 @@ export function LogMeal({ date }: { date?: string }) {
 
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
 
-  const recognitionRef = useRef<any>(null)
-  const manualStopRef = useRef(false)
-  const committedRef = useRef('')
-  const transcriptRef = useRef('')
-  const voiceUsedRef = useRef(false)
   const [reviewHint, setReviewHint] = useState(false)
+  const voiceUsedRef = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  const voice = useSpeechInput({
+    onTranscript: (t) => {
+      voiceUsedRef.current = true
+      setText(t)
+    },
+    onStop: (t) => {
+      if (t) setReviewHint(true)
+    },
+  })
+
+  const addVoice = useSpeechInput({
+    onTranscript: (t) => {
+      voiceUsedRef.current = true
+      setAddText(t)
+    },
+  })
+
+  // Bring the confirmation panel into view when it appears — on small
+  // screens it can otherwise render below the fold.
+  useEffect(() => {
+    if (status === 'confirming') panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [status])
 
   async function parse(input: string) {
     const clean = input.trim()
@@ -62,8 +85,8 @@ export function LogMeal({ date }: { date?: string }) {
       setRawInput(clean)
       setEdited(false)
       setStatus('confirming')
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
       setStatus('idle')
     }
   }
@@ -79,8 +102,8 @@ export function LogMeal({ date }: { date?: string }) {
       setRawInput((prev) => (prev ? `${prev}; ${clean}` : clean))
       setEdited(true)
       setAddText('')
-    } catch (err: any) {
-      setError(err.message || 'Could not add that.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add that.')
     } finally {
       setAdding(false)
     }
@@ -104,9 +127,11 @@ export function LogMeal({ date }: { date?: string }) {
         }),
       })
       reset()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Could not save.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save.')
       setStatus('confirming')
     }
   }
@@ -115,6 +140,7 @@ export function LogMeal({ date }: { date?: string }) {
     setText('')
     setItems([])
     setAddText('')
+    setShowPicker(false)
     setStatus('idle')
     setError(null)
     setReviewHint(false)
@@ -132,69 +158,33 @@ export function LogMeal({ date }: { date?: string }) {
     )
   }
 
+  function scaleItem(i: number, factor: number) {
+    setEdited(true)
+    setItems((prev) =>
+      prev.map((it, idx) =>
+        idx === i
+          ? {
+              ...it,
+              calories_kcal: Math.round(it.calories_kcal * factor),
+              protein_g: Math.round(it.protein_g * factor * 10) / 10,
+              carbs_g: Math.round(it.carbs_g * factor * 10) / 10,
+              fat_g: Math.round(it.fat_g * factor * 10) / 10,
+              fiber_g: Math.round(it.fiber_g * factor * 10) / 10,
+            }
+          : it
+      )
+    )
+  }
+
   function removeItem(i: number) {
     setEdited(true)
     setItems((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  function startVoice() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) {
-      setError('Voice input is not supported in this browser. Try typing instead.')
-      return
-    }
-    const rec = new SR()
-    recognitionRef.current = rec
-    manualStopRef.current = false
-    committedRef.current = ''
-    transcriptRef.current = ''
-    rec.lang = 'en-IN'
-    rec.interimResults = true
-    rec.continuous = true
-
-    rec.onresult = (e: any) => {
-      voiceUsedRef.current = true
-      let interim = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const chunk = e.results[i][0].transcript
-        if (e.results[i].isFinal) committedRef.current += chunk + ' '
-        else interim += chunk
-      }
-      const full = (committedRef.current + interim).trim()
-      transcriptRef.current = full
-      setText(full)
-    }
-
-    rec.onerror = (e: any) => {
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        setError('Microphone permission was blocked.')
-        manualStopRef.current = true
-        setListening(false)
-      }
-    }
-
-    // On manual stop the transcript stays in the textarea for the user to
-    // review and edit — parsing only happens when they tap "Log it".
-    rec.onend = () => {
-      if (manualStopRef.current) {
-        setListening(false)
-        if (transcriptRef.current.trim()) setReviewHint(true)
-      } else {
-        try {
-          rec.start()
-        } catch {
-          setListening(false)
-        }
-      }
-    }
-
-    setListening(true)
-    rec.start()
-  }
-
-  function stopVoice() {
-    manualStopRef.current = true
-    recognitionRef.current?.stop()
+  function addItem(item: FoodItem) {
+    setEdited(true)
+    setItems((prev) => [...prev, { ...item }])
+    setShowPicker(false)
   }
 
   const totals = items.reduce(
@@ -211,7 +201,7 @@ export function LogMeal({ date }: { date?: string }) {
   // ---- Confirming / saving ----
   if (status === 'confirming' || status === 'saving') {
     return (
-      <div>
+      <div ref={panelRef}>
         <div className="flex items-center justify-between">
           <select
             value={mealType}
@@ -240,11 +230,25 @@ export function LogMeal({ date }: { date?: string }) {
                   <X className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </button>
               </div>
-              <input
-                value={it.portion}
-                onChange={(e) => updateItem(i, 'portion', e.target.value)}
-                className="mb-3 w-full bg-transparent text-[13px] text-muted-foreground outline-none"
-              />
+              <div className="mb-3 flex items-center gap-2">
+                <input
+                  value={it.portion}
+                  onChange={(e) => updateItem(i, 'portion', e.target.value)}
+                  className="flex-1 bg-transparent text-[13px] text-muted-foreground outline-none"
+                />
+                <button
+                  onClick={() => scaleItem(i, 0.5)}
+                  className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground transition-opacity hover:opacity-70"
+                >
+                  ×½
+                </button>
+                <button
+                  onClick={() => scaleItem(i, 2)}
+                  className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground transition-opacity hover:opacity-70"
+                >
+                  ×2
+                </button>
+              </div>
               <div className="grid grid-cols-5 gap-3">
                 {([
                   ['calories_kcal', 'kcal'],
@@ -258,6 +262,8 @@ export function LogMeal({ date }: { date?: string }) {
                     <input
                       type="number"
                       inputMode="decimal"
+                      enterKeyHint="done"
+                      onFocus={(e) => e.target.select()}
                       value={it[field] as number}
                       onChange={(e) => updateItem(i, field, e.target.value)}
                       className="num field text-[14px]"
@@ -269,7 +275,7 @@ export function LogMeal({ date }: { date?: string }) {
           ))}
         </div>
 
-        {/* Add more */}
+        {/* Add more — type or speak */}
         <div className="mt-4 flex items-end gap-2">
           <input
             value={addText}
@@ -277,10 +283,21 @@ export function LogMeal({ date }: { date?: string }) {
             onKeyDown={(e) => {
               if (e.key === 'Enter') addMore(addText)
             }}
+            enterKeyHint="go"
             placeholder="add more… e.g. 2 rotis"
             disabled={adding}
             className="field flex-1"
           />
+          <button
+            onClick={() => (addVoice.listening ? addVoice.stop() : addVoice.start())}
+            disabled={adding}
+            aria-label={addVoice.listening ? 'Stop listening' : 'Speak to add more'}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
+              addVoice.listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'
+            }`}
+          >
+            {addVoice.listening ? <Square className="h-3 w-3" strokeWidth={2} /> : <Mic className="h-3.5 w-3.5" strokeWidth={1.5} />}
+          </button>
           <button
             onClick={() => addMore(addText)}
             disabled={adding || !addText.trim()}
@@ -289,15 +306,34 @@ export function LogMeal({ date }: { date?: string }) {
             {adding ? '…' : 'Add'}
           </button>
         </div>
-        <button
-          onClick={() => {
-            setEdited(true)
-            setItems((prev) => [...prev, { ...BLANK }])
-          }}
-          className="mt-2 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
-        >
-          + add an item by hand
-        </button>
+
+        {/* Add by hand — recent foods first */}
+        {!showPicker ? (
+          <button
+            onClick={() => (recentItems.length > 0 ? setShowPicker(true) : addItem(BLANK))}
+            className="mt-2 text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
+          >
+            + add an item by hand
+          </button>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {recentItems.slice(0, 6).map((r, i) => (
+              <button
+                key={i}
+                onClick={() => addItem(r)}
+                className="rounded-full border border-border px-3 py-1.5 text-[12px] text-foreground transition-opacity hover:opacity-70"
+              >
+                {r.name} <span className="num text-muted-foreground">· {Math.round(r.calories_kcal)}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => addItem(BLANK)}
+              className="rounded-full border border-dashed border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-opacity hover:opacity-70"
+            >
+              blank item
+            </button>
+          </div>
+        )}
 
         <div className="mt-5 flex items-baseline justify-between">
           <span className="eyebrow">Total</span>
@@ -336,26 +372,27 @@ export function LogMeal({ date }: { date?: string }) {
         className="w-full resize-none bg-transparent text-[16px] leading-snug text-foreground outline-none placeholder:text-muted-foreground"
       />
 
-      {listening && <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>}
-      {!listening && reviewHint && (
+      {voice.listening && <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>}
+      {!voice.listening && reviewHint && (
         <p className="mt-2 text-[13px] text-muted-foreground">Got it — check the text, then tap Log it.</p>
       )}
-      {error && <p className="mt-2 text-[13px] text-destructive">{error}</p>}
+      {saved && <p className="mt-2 text-[13px]" style={{ color: 'var(--color-success)' }}>Saved ✓</p>}
+      {(error || voice.error) && <p className="mt-2 text-[13px] text-destructive">{error || voice.error}</p>}
 
       <div className="mt-3 flex items-center gap-3">
         <button
-          onClick={() => (listening ? stopVoice() : startVoice())}
+          onClick={() => (voice.listening ? voice.stop() : voice.start())}
           disabled={status === 'parsing'}
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
-            listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
+            voice.listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
           }`}
-          aria-label={listening ? 'Stop listening' : 'Speak your meal'}
+          aria-label={voice.listening ? 'Stop listening' : 'Speak your meal'}
         >
-          {listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-5 w-5" strokeWidth={1.5} />}
+          {voice.listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-5 w-5" strokeWidth={1.5} />}
         </button>
         <button
           onClick={() => parse(text)}
-          disabled={status === 'parsing' || !text.trim() || listening}
+          disabled={status === 'parsing' || !text.trim() || voice.listening}
           className="btn-primary h-12 flex-1 text-[15px]"
         >
           {status === 'parsing' ? 'Reading…' : 'Log it'}

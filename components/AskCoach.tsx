@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { fetchJson } from '@/lib/fetchJson'
-import { Sparkles, ArrowUp } from 'lucide-react'
+import { useSpeechInput } from '@/lib/useSpeechInput'
+import { Sparkles, ArrowUp, Mic, Square } from 'lucide-react'
 
 type Exchange = { q: string; a: string }
 
@@ -21,6 +22,7 @@ export function AskCoach() {
   const [question, setQuestion] = useState('')
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const voice = useSpeechInput({ onTranscript: setQuestion })
 
   async function ask(q: string) {
     const clean = q.trim()
@@ -62,10 +64,20 @@ export function AskCoach() {
           disabled={pending !== null}
           className="w-full resize-none bg-transparent text-[16px] leading-snug text-foreground outline-none placeholder:text-muted-foreground"
         />
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex items-center justify-between">
+          <button
+            onClick={() => (voice.listening ? voice.stop() : voice.start())}
+            disabled={pending !== null}
+            aria-label={voice.listening ? 'Stop listening' : 'Speak your question'}
+            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-opacity hover:opacity-70 disabled:opacity-40 ${
+              voice.listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
+            }`}
+          >
+            {voice.listening ? <Square className="h-3.5 w-3.5" strokeWidth={2} /> : <Mic className="h-4 w-4" strokeWidth={1.5} />}
+          </button>
           <button
             onClick={() => ask(question)}
-            disabled={pending !== null || !question.trim()}
+            disabled={pending !== null || !question.trim() || voice.listening}
             aria-label="Ask"
             className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
           >
@@ -88,7 +100,10 @@ export function AskCoach() {
         ))}
       </div>
 
-      {error && <p className="mt-3 text-[13px] text-destructive">{error}</p>}
+      {voice.listening && (
+        <p className="mt-2 text-[13px] text-primary">Listening… tap stop when you&apos;re done.</p>
+      )}
+      {(error || voice.error) && <p className="mt-3 text-[13px] text-destructive">{error || voice.error}</p>}
 
       {/* Pending card */}
       {pending !== null && (

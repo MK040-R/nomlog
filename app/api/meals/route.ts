@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { FoodItemSchema } from '@/lib/gemini/parse'
-import { sumItems, dayRange } from '@/lib/nutrition'
+import { sumItems, dayRange, TYPICAL_MEAL_HOUR } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 
 // GET /api/meals?date=YYYY-MM-DD  → meals logged on that local day (default: today)
@@ -42,9 +42,6 @@ const SaveMealSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
-// Typical local hour per meal type — places backfilled meals sensibly in the
-// day's chronological list.
-const MEAL_HOUR = { breakfast: 9, lunch: 13, snack: 17, dinner: 20 } as const
 
 export async function POST(request: Request) {
   const user = await verifySession()
@@ -67,7 +64,7 @@ export async function POST(request: Request) {
     if (ymd > dayRange(tz).ymd) {
       return NextResponse.json({ error: "Can't log meals in the future." }, { status: 400 })
     }
-    loggedAt = new Date(new Date(startIso).getTime() + MEAL_HOUR[rest.meal_type] * 3600_000).toISOString()
+    loggedAt = new Date(new Date(startIso).getTime() + TYPICAL_MEAL_HOUR[rest.meal_type] * 3600_000).toISOString()
   }
 
   const supabase = await createClient()

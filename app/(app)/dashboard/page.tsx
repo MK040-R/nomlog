@@ -2,15 +2,16 @@ import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Flame, MessageCircleQuestion } from 'lucide-react'
 import { LogMeal } from '@/components/LogMeal'
 import { MealCard } from '@/components/MealCard'
 import { DailyTip } from '@/components/DailyTip'
 import { WhatFits } from '@/components/WhatFits'
-import { QuickRelog, type RelogOption } from '@/components/QuickRelog'
-import { dayRange, todayYmd, hourNow, shiftYmd, DEFAULT_GOALS } from '@/lib/nutrition'
+import { WaterTracker } from '@/components/WaterTracker'
+import { QuickRelog, type RelogOption, type YesterdayMeal } from '@/components/QuickRelog'
+import { dayRange, todayYmd, hourNow, shiftYmd, ymdOf, mealSig, mealLabel, DEFAULT_GOALS } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
-import type { FoodItem } from '@/types/app.types'
+import type { FoodItem, MealType } from '@/types/app.types'
 
 export default async function DashboardPage({
   searchParams,
@@ -24,28 +25,31 @@ export default async function DashboardPage({
   const tz = await getUserTz()
   const supabase = await createClient()
   const { startIso, endIso, ymd } = dayRange(tz, dateParam)
-  if (ymd > todayYmd(tz)) redirect('/dashboard')
-  const isToday = ymd === todayYmd(tz)
+  const today = todayYmd(tz)
+  if (ymd > today) redirect('/dashboard')
+  const isToday = ymd === today
 
-  const [{ data: meals }, { data: profile }, { data: recentMeals }] = await Promise.all([
-    supabase
-      .from('meal_logs')
-      .select('*')
-      .gte('logged_at', startIso)
-      .lt('logged_at', endIso)
-      .order('logged_at', { ascending: true }),
-    supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
-    // last 14 days, for the one-tap "log again" chips (today view only)
-    isToday
-      ? supabase
-          .from('meal_logs')
-          .select('food_items, total_calories, logged_at')
-          .gte('logged_at', dayRange(tz, shiftYmd(ymd, -14)).startIso)
-          .lt('logged_at', endIso)
-          .order('logged_at', { ascending: false })
-          .limit(60)
-      : Promise.resolve({ data: null }),
-  ])
+  const [{ data: meals }, { data: profile }, { data: recentMeals }, { data: favorites }, { data: water }, { data: streakRows }] =
+    await Promise.all([
+      supabase
+        .from('meal_logs')
+        .select('*')
+        .gte('logged_at', startIso)
+        .lt('logged_at', endIso)
+        .order('logged_at', { ascending: true }),
+      supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
+      // last 14 days: powers "log again", "same as yesterday" and the recent-items picker
+      supabase
+        .from('meal_logs')
+        .select('food_items, total_calories, meal_type, logged_at')
+        .gte('logged_at', dayRange(tz, shiftYmd(today, -14)).startIso)
+        .order('logged_at', { ascending: false })
+        .limit(80),
+      supabase.from('favorite_meals').select('sig, label, items').order('created_at', { ascending: false }),
+      supabase.from('water_logs').select('glasses').eq('logged_on', ymd).maybeSingle(),
+      // distinct logged days for the streak counter
+      supabase.from('meal_logs').select('logged_at').order('logged_at', { ascending: false }).limit(400),
+    ])
 
   const rows = meals ?? []
   const goals = {
@@ -67,25 +71,73 @@ export default async function DashboardPage({
     { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
   )
 
-  // Top repeated meals from the last 14 days, most frequent first (QLOG-01).
+  // Streak: consecutive logged days ending today (or yesterday if today is empty yet)
+  const loggedDays = new Set((streakRows ?? []).map((m) => ymdOf(tz, m.logged_at)))
+  let streak = 0
+  let cursor = loggedDays.has(today) ? today : shiftYmd(today, -1)
+  while (loggedDays.has(cursor)) {
+    streak++
+    cursor = shiftYmd(cursor, -1)
+  }
+
+  // Quick-log chips: favorites first, then meals repeated 2+ times in 14 days
+  const favSigs = new Set((favorites ?? []).map((f) => f.sig))
+  const favOptions: RelogOption[] = (favorites ?? []).slice(0, 4).map((f) => {
+    const items = (f.items as unknown as FoodItem[]) ?? []
+    return { label: f.label, kcal: Math.round(items.reduce((a, it) => a + (it.calories_kcal || 0), 0)), items, favorite: true }
+  })
   const bySig = new Map<string, { count: number; option: RelogOption }>()
   for (const m of recentMeals ?? []) {
     const items = ((m.food_items as unknown as FoodItem[]) ?? []).filter((it) => it?.name)
     if (items.length === 0) continue
-    const sig = items.map((it) => `${it.name}|${it.portion}`.toLowerCase()).sort().join(';')
+    const sig = mealSig(items)
+    if (favSigs.has(sig)) continue
     const found = bySig.get(sig)
     if (found) found.count++
-    else {
-      const names = items.map((it) => it.name)
-      const label = names.length > 2 ? `${names.slice(0, 2).join(' + ')} +${names.length - 2}` : names.join(' + ')
-      bySig.set(sig, { count: 1, option: { label, kcal: m.total_calories, items } })
-    }
+    else bySig.set(sig, { count: 1, option: { label: mealLabel(items), kcal: m.total_calories, items } })
   }
-  const relogOptions = [...bySig.values()]
-    .filter((e) => e.count >= 2) // only meals they actually repeat
+  const repeatOptions = [...bySig.values()]
+    .filter((e) => e.count >= 2)
     .sort((a, b) => b.count - a.count)
-    .slice(0, 3)
+    .slice(0, Math.max(0, 4 - favOptions.length))
     .map((e) => e.option)
+  const relogOptions = [...favOptions, ...repeatOptions]
+
+  // "Same as yesterday": yesterday's meals grouped by type, skipping types already logged today
+  const yesterdayYmd = shiftYmd(today, -1)
+  const typesToday = new Set(rows.map((m) => m.meal_type))
+  const yesterdayByType = new Map<MealType, { items: FoodItem[]; kcal: number }>()
+  for (const m of recentMeals ?? []) {
+    if (ymdOf(tz, m.logged_at) !== yesterdayYmd) continue
+    const t = m.meal_type as MealType
+    if (typesToday.has(t)) continue
+    const items = ((m.food_items as unknown as FoodItem[]) ?? []).filter((it) => it?.name)
+    if (items.length === 0) continue
+    const cur = yesterdayByType.get(t) ?? { items: [], kcal: 0 }
+    cur.items.push(...items)
+    cur.kcal += m.total_calories
+    yesterdayByType.set(t, cur)
+  }
+  const yesterdayMeals: YesterdayMeal[] = [...yesterdayByType.entries()].map(([meal_type, v]) => ({
+    meal_type,
+    label: `yesterday's ${meal_type}`,
+    kcal: v.kcal,
+    items: v.items,
+  }))
+
+  // Recent individual items for the add-by-hand picker, deduped by name
+  const seenNames = new Set<string>()
+  const recentItems: FoodItem[] = []
+  for (const m of recentMeals ?? []) {
+    for (const it of (m.food_items as unknown as FoodItem[]) ?? []) {
+      const key = it?.name?.trim().toLowerCase()
+      if (!key || seenNames.has(key)) continue
+      seenNames.add(key)
+      recentItems.push(it)
+      if (recentItems.length >= 6) break
+    }
+    if (recentItems.length >= 6) break
+  }
 
   const remaining = goals.calories - consumed.calories
   const pct = Math.min(100, Math.round((consumed.calories / goals.calories) * 100)) || 0
@@ -99,7 +151,9 @@ export default async function DashboardPage({
   })
   const prevHref = `/dashboard?date=${shiftYmd(ymd, -1)}`
   const nextDay = shiftYmd(ymd, 1)
-  const nextHref = nextDay > todayYmd(tz) ? null : `/dashboard?date=${nextDay}`
+  const nextHref = nextDay > today ? null : `/dashboard?date=${nextDay}`
+  const hour = hourNow(tz)
+  const dayDone = isToday && hour >= 20 && consumed.calories > 0
 
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
@@ -122,10 +176,26 @@ export default async function DashboardPage({
       </div>
 
       {/* Greeting */}
-      <h1 className="mt-8 font-display text-[22px] font-medium leading-tight text-foreground">
-        {isToday ? `${greeting(hourNow(tz))}, ${displayName}` : 'Looking back'}
-      </h1>
+      <div className="mt-8 flex items-start justify-between gap-3">
+        <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">
+          {isToday ? `${greeting(hour)}, ${displayName}` : 'Looking back'}
+        </h1>
+        {isToday && streak >= 2 && (
+          <span className="flex shrink-0 items-center gap-1 pt-1 text-[12px] text-muted-foreground">
+            <Flame className="h-3.5 w-3.5" strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
+            <span className="num">{streak} days</span>
+          </span>
+        )}
+      </div>
       {isToday && <DailyTip />}
+      {!isToday && (
+        <Link
+          href={`/ask?about=${ymd}`}
+          className="mt-2 inline-flex items-center gap-1.5 text-[12px] text-primary transition-opacity hover:opacity-70"
+        >
+          <MessageCircleQuestion className="h-3.5 w-3.5" strokeWidth={1.5} /> Ask the coach about this day
+        </Link>
+      )}
 
       <div className="divider my-7" />
 
@@ -150,6 +220,11 @@ export default async function DashboardPage({
             style={{ width: `${pct}%`, backgroundColor: over ? 'var(--color-destructive)' : 'var(--color-primary)' }}
           />
         </div>
+        {dayDone && (
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            That&apos;s {consumed.calories} of {goals.calories} kcal today{over ? '.' : ' — nicely done.'}
+          </p>
+        )}
       </section>
 
       <div className="divider my-7" />
@@ -163,14 +238,24 @@ export default async function DashboardPage({
       </section>
 
       <div className="divider my-7" />
+
+      {/* Water */}
+      <section>
+        <span className="eyebrow">Water</span>
+        <div className="mt-3">
+          <WaterTracker initial={water?.glasses ?? 0} date={ymd} />
+        </div>
+      </section>
+
+      <div className="divider my-7" />
       <section>
         <span className="eyebrow">{isToday ? 'Log a meal' : `Log a meal for ${dateLabel}`}</span>
         <div className="mt-4">
-          <LogMeal date={isToday ? undefined : ymd} />
+          <LogMeal date={isToday ? undefined : ymd} recentItems={recentItems} />
         </div>
-        {isToday && relogOptions.length > 0 && (
+        {isToday && (
           <div className="mt-4">
-            <QuickRelog options={relogOptions} />
+            <QuickRelog options={relogOptions} yesterday={yesterdayMeals} />
           </div>
         )}
         {isToday && (
@@ -191,18 +276,24 @@ export default async function DashboardPage({
           </p>
         ) : (
           <div className="mt-4 flex flex-col">
-            {rows.map((m, idx) => (
-              <div key={m.id} className={idx > 0 ? 'mt-4 border-t border-border/60 pt-4' : ''}>
-                <MealCard
-                  meal={{
-                    id: m.id,
-                    meal_type: m.meal_type,
-                    total_calories: m.total_calories,
-                    food_items: (m.food_items as unknown as FoodItem[]) ?? [],
-                  }}
-                />
-              </div>
-            ))}
+            {rows.map((m, idx) => {
+              const items = (m.food_items as unknown as FoodItem[]) ?? []
+              return (
+                <div key={m.id} className={idx > 0 ? 'mt-4 border-t border-border/60 pt-4' : ''}>
+                  <MealCard
+                    meal={{
+                      id: m.id,
+                      meal_type: m.meal_type,
+                      total_calories: m.total_calories,
+                      food_items: items,
+                    }}
+                    date={ymd}
+                    todayYmd={today}
+                    favorited={favSigs.has(mealSig(items))}
+                  />
+                </div>
+              )
+            })}
           </div>
         )}
       </section>

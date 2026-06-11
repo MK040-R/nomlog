@@ -3,11 +3,14 @@ import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { FoodItemSchema } from '@/lib/gemini/parse'
-import { sumItems } from '@/lib/nutrition'
+import { sumItems, dayRange, TYPICAL_MEAL_HOUR } from '@/lib/nutrition'
+import { getUserTz } from '@/lib/tz-server'
 
 const PatchSchema = z.object({
   meal_type: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
   items: z.array(FoodItemSchema).min(1),
+  // optional move to another past day (YYYY-MM-DD, user's zone)
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 })
 
 // PATCH /api/meals/:id  → edit a meal. Totals recomputed server-side from items.
@@ -26,6 +29,18 @@ export async function PATCH(
   }
 
   const totals = sumItems(parsed.data.items)
+
+  // Moving the meal to another day: timestamp it at that day's typical hour.
+  let loggedAt: string | undefined
+  if (parsed.data.date) {
+    const tz = await getUserTz()
+    const { ymd, startIso } = dayRange(tz, parsed.data.date)
+    if (ymd > dayRange(tz).ymd) {
+      return NextResponse.json({ error: "Can't move meals into the future." }, { status: 400 })
+    }
+    loggedAt = new Date(new Date(startIso).getTime() + TYPICAL_MEAL_HOUR[parsed.data.meal_type] * 3600_000).toISOString()
+  }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('meal_logs')
@@ -33,6 +48,7 @@ export async function PATCH(
       meal_type: parsed.data.meal_type,
       food_items: parsed.data.items,
       edited: true,
+      ...(loggedAt ? { logged_at: loggedAt } : {}),
       ...totals,
     })
     .eq('id', id)

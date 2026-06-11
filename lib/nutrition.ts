@@ -124,6 +124,20 @@ export function weekdayShort(ymd: string) {
   })
 }
 
+/** Normalized identity of a meal's items — used to match repeats/favorites. */
+export function mealSig(items: FoodItem[]): string {
+  return items.map((it) => `${it.name}|${it.portion}`.toLowerCase()).sort().join(';')
+}
+
+/** Short human label for a meal's items, e.g. "Roti + Toor Dal +1". */
+export function mealLabel(items: FoodItem[]): string {
+  const names = items.map((it) => it.name)
+  return names.length > 2 ? `${names.slice(0, 2).join(' + ')} +${names.length - 2}` : names.join(' + ')
+}
+
+/** Typical local hour per meal type — used to place backfilled meals in the day. */
+export const TYPICAL_MEAL_HOUR: Record<MealType, number> = { breakfast: 9, lunch: 13, snack: 17, dinner: 20 }
+
 /** The meal type a fresh log most likely is, by local hour (mirrors CORR-05). */
 export function mealTypeForHour(h: number): MealType {
   if (h < 11) return 'breakfast'
