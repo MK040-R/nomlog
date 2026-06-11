@@ -129,11 +129,20 @@ Defined 2026-06-10 with owner. Cost discipline matters: free Gemini tier.
 
 ---
 
+## v1.2 — Small-enhancements batch (owner-approved list, 2026-06-11) — ✅ SHIPPED
+
+Benchmarked against MyFitnessPal; logging-first (owner: no goal-centric framing, no meal timestamps).
+Logging: undo delete, save toast, copy-yesterday, favorites (star), recent-foods picker, x1/2-x2 multipliers, water tracker, move meal to another day, add-more mic, voice unified into one hook.
+Dashboard: streak flame, day-complete line. Coach: loggable suggestions on answers, time-aware chips, ask-about-this-day, tip refresh, recap weight trend. Insights: macro donut, best/toughest day, weight-vs-intake chart, CSV export. Profile: goal weight progress, weight history delete, export link, build version. Reliability: offline banner, PWA pull-to-refresh, session keep-alive on wake, manifest + icons, JSON-401 middleware + hardened fetch, local-timezone support, past-day logging.
+Pending owner step: run supabase/migrations/0006_favorites_water_goalweight.sql.
+
+---
+
 ## v2 Requirements
 
 Still tracked, not scheduled.
 
-- **ANLT-V2-03**: Export logs to CSV
+- ~~ANLT-V2-03: Export logs to CSV~~ — shipped in v1.2
 - **PLAT-V2-03**: Habit/streak nudge system (partially covered by RECAP)
 
 ---
