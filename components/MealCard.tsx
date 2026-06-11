@@ -38,9 +38,11 @@ type Props = {
   date: string
   todayYmd: string
   favorited: boolean
+  /** Rendered inside a meal-type group: the type header lives on the group. */
+  grouped?: boolean
 }
 
-export function MealCard({ meal, date, todayYmd, favorited }: Props) {
+export function MealCard({ meal, date, todayYmd, favorited, grouped }: Props) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -308,11 +310,15 @@ export function MealCard({ meal, date, todayYmd, favorited }: Props) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-2 text-[13px] font-medium capitalize text-foreground">
-          <span>{MEAL_EMOJI[meal.meal_type]}</span> {meal.meal_type}
-        </span>
+        {grouped ? (
+          <span className="num text-[12px] text-muted-foreground">{meal.total_calories} kcal</span>
+        ) : (
+          <span className="flex items-center gap-2 text-[13px] font-medium capitalize text-foreground">
+            <span>{MEAL_EMOJI[meal.meal_type]}</span> {meal.meal_type}
+          </span>
+        )}
         <div className="flex items-center gap-3">
-          <span className="num text-[13px] text-foreground">{meal.total_calories} kcal</span>
+          {!grouped && <span className="num text-[13px] text-foreground">{meal.total_calories} kcal</span>}
           <button
             onClick={toggleFavorite}
             disabled={busy}

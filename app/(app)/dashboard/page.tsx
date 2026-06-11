@@ -9,6 +9,7 @@ import { DailyTip } from '@/components/DailyTip'
 import { WhatFits } from '@/components/WhatFits'
 import { WaterTracker } from '@/components/WaterTracker'
 import { QuickRelog, type RelogOption, type YesterdayMeal } from '@/components/QuickRelog'
+import { MacroPanel } from '@/components/MacroPanel'
 import { dayRange, todayYmd, hourNow, shiftYmd, ymdOf, mealSig, mealLabel, DEFAULT_GOALS } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem, MealType } from '@/types/app.types'
@@ -139,6 +140,22 @@ export default async function DashboardPage({
     if (recentItems.length >= 6) break
   }
 
+  const dayItems = rows.flatMap((m) => ((m.food_items as unknown as FoodItem[]) ?? []))
+
+  // Fixed meal sections: every entry of a type lives under one header.
+  const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner']
+  const MEAL_META: Record<MealType, { emoji: string; label: string }> = {
+    breakfast: { emoji: '🍳', label: 'Breakfast' },
+    lunch: { emoji: '🍛', label: 'Lunch' },
+    snack: { emoji: '🍌', label: 'Snacks' },
+    dinner: { emoji: '🌙', label: 'Dinner' },
+  }
+  const mealGroups = MEAL_ORDER.map((type) => ({
+    type,
+    ...MEAL_META[type],
+    entries: rows.filter((m) => m.meal_type === type),
+  })).filter((g) => g.entries.length > 0)
+
   const remaining = goals.calories - consumed.calories
   const pct = Math.min(100, Math.round((consumed.calories / goals.calories) * 100)) || 0
   const over = consumed.calories > goals.calories
@@ -229,12 +246,13 @@ export default async function DashboardPage({
 
       <div className="divider my-7" />
 
-      {/* Macros */}
-      <section className="flex items-start justify-between">
-        <Macro label="Protein" value={consumed.protein} goal={goals.protein} />
-        <Macro label="Carbs" value={consumed.carbs} goal={goals.carbs} />
-        <Macro label="Fat" value={consumed.fat} goal={goals.fat} />
-        <Macro label="Fiber" value={consumed.fiber} goal={goals.fiber} />
+      {/* Macros — tappable: shows which foods contributed */}
+      <section>
+        <MacroPanel
+          consumed={{ protein: consumed.protein, carbs: consumed.carbs, fat: consumed.fat, fiber: consumed.fiber }}
+          goals={{ protein: goals.protein, carbs: goals.carbs, fat: goals.fat, fiber: goals.fiber }}
+          items={dayItems}
+        />
       </section>
 
       <div className="divider my-7" />
@@ -276,24 +294,39 @@ export default async function DashboardPage({
           </p>
         ) : (
           <div className="mt-4 flex flex-col">
-            {rows.map((m, idx) => {
-              const items = (m.food_items as unknown as FoodItem[]) ?? []
-              return (
-                <div key={m.id} className={idx > 0 ? 'mt-4 border-t border-border/60 pt-4' : ''}>
-                  <MealCard
-                    meal={{
-                      id: m.id,
-                      meal_type: m.meal_type,
-                      total_calories: m.total_calories,
-                      food_items: items,
-                    }}
-                    date={ymd}
-                    todayYmd={today}
-                    favorited={favSigs.has(mealSig(items))}
-                  />
+            {mealGroups.map((g, gi) => (
+              <div key={g.type} className={gi > 0 ? 'mt-5 border-t border-border/60 pt-5' : ''}>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+                    <span>{g.emoji}</span> {g.label}
+                  </span>
+                  <span className="num text-[13px] font-medium text-foreground">
+                    {g.entries.reduce((a, m) => a + m.total_calories, 0)} kcal
+                  </span>
                 </div>
-              )
-            })}
+                <div className="flex flex-col">
+                  {g.entries.map((m, idx) => {
+                    const items = (m.food_items as unknown as FoodItem[]) ?? []
+                    return (
+                      <div key={m.id} className={idx > 0 ? 'mt-3 border-t border-border/30 pt-3' : ''}>
+                        <MealCard
+                          meal={{
+                            id: m.id,
+                            meal_type: m.meal_type,
+                            total_calories: m.total_calories,
+                            food_items: items,
+                          }}
+                          date={ymd}
+                          todayYmd={today}
+                          favorited={favSigs.has(mealSig(items))}
+                          grouped
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -301,21 +334,6 @@ export default async function DashboardPage({
   )
 }
 
-function Macro({ label, value, goal }: { label: string; value: number; goal: number }) {
-  const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
-  return (
-    <div className="flex w-[22%] flex-col">
-      <span className="num text-[20px] font-medium leading-none text-foreground">
-        {Math.round(value)}
-        <span className="text-[12px] font-normal text-muted-foreground">g</span>
-      </span>
-      <span className="eyebrow mt-1.5">{label}</span>
-      <div className="mt-2 h-px w-full bg-muted">
-        <div className="h-full bg-foreground/30" style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  )
-}
 
 function greeting(h: number) {
   if (h < 12) return 'Good morning'
