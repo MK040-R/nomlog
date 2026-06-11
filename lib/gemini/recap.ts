@@ -20,6 +20,8 @@ export type RecapContext = {
   /** e.g. "protein (44g avg of 90g goal)" — the macro furthest below goal. */
   weakestMacro: string
   topFoods: string[]
+  /** e.g. "78.4 → 78.0 kg over the last 2 weeks", or null when not enough data. */
+  weightNote: string | null
 }
 
 function buildPrompt(ctx: RecapContext) {
@@ -31,6 +33,7 @@ Their last 7 days:
 - At or under their calorie goal on ${ctx.onGoalDays} of the ${ctx.daysLogged} logged days
 - Macro furthest below goal: ${ctx.weakestMacro}
 - Most eaten: ${ctx.topFoods.length ? ctx.topFoods.join(', ') : 'not much logged'}
+${ctx.weightNote ? `- Weight: ${ctx.weightNote}` : ''}
 
 Write ONE short paragraph (3-4 sentences, under 80 words): how the week went, the one thing to nudge (the weak macro or logging consistency — pick what matters most), and end encouraging. Ground every claim in the numbers above; never invent foods or numbers.`
 }

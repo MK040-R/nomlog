@@ -11,20 +11,24 @@ import { hourNow } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 
 // GET /api/tip → today's tip, generated at most once per local day and cached.
-export async function GET() {
+// ?refresh=1 regenerates (one extra call) and replaces the cached tip.
+export async function GET(request: Request) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Please sign in.' }, { status: 401 })
 
+  const refresh = new URL(request.url).searchParams.get('refresh') === '1'
   const tz = await getUserTz()
   const supabase = await createClient()
   const { ymd, goals, consumed, mealNames } = await getTodaySummary(supabase, user.id, tz)
 
-  const { data: cached } = await supabase
-    .from('daily_tips')
-    .select('tip')
-    .eq('tip_date', ymd)
-    .maybeSingle()
-  if (cached) return NextResponse.json({ tip: cached.tip, cached: true })
+  if (!refresh) {
+    const { data: cached } = await supabase
+      .from('daily_tips')
+      .select('tip')
+      .eq('tip_date', ymd)
+      .maybeSingle()
+    if (cached) return NextResponse.json({ tip: cached.tip, cached: true })
+  }
 
   try {
     const tip = await generateDailyTip({ goals, consumed, mealNames, hourLocal: hourNow(tz) })
@@ -33,7 +37,7 @@ export async function GET() {
     // the race is fine — we still return the tip we generated.
     const { error } = await supabase
       .from('daily_tips')
-      .upsert({ user_id: user.id, tip_date: ymd, tip }, { onConflict: 'user_id,tip_date', ignoreDuplicates: true })
+      .upsert({ user_id: user.id, tip_date: ymd, tip }, { onConflict: 'user_id,tip_date', ignoreDuplicates: !refresh })
     if (error) console.error('tip cache write failed:', error)
 
     return NextResponse.json({ tip, cached: false })

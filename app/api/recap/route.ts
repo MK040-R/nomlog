@@ -30,13 +30,14 @@ export async function GET() {
   const days = lastNDays(tz, 7)
   const { startIso } = dayRange(tz, days[0])
   const { endIso } = dayRange(tz, days[6])
-  const [{ data: meals }, { data: profile }] = await Promise.all([
+  const [{ data: meals }, { data: profile }, { data: weights }] = await Promise.all([
     supabase
       .from('meal_logs')
       .select('logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, food_items')
       .gte('logged_at', startIso)
       .lt('logged_at', endIso),
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
+    supabase.from('weight_logs').select('logged_on, weight_kg').order('logged_on', { ascending: false }).limit(5),
   ])
 
   const rows = meals ?? []
@@ -94,6 +95,12 @@ export async function GET() {
     .slice(0, 3)
     .map(([name]) => name)
 
+  const w = weights ?? []
+  const weightNote =
+    w.length >= 2
+      ? `${Number(w[w.length - 1].weight_kg).toFixed(1)} → ${Number(w[0].weight_kg).toFixed(1)} kg between ${w[w.length - 1].logged_on} and ${w[0].logged_on}`
+      : null
+
   try {
     const recap = await generateWeeklyRecap({
       daysLogged,
@@ -103,6 +110,7 @@ export async function GET() {
       streak,
       weakestMacro,
       topFoods,
+      weightNote,
     })
 
     const { error } = await supabase

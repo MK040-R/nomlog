@@ -2,9 +2,17 @@ import { verifySession } from '@/lib/dal'
 import { redirect } from 'next/navigation'
 import { AskCoach } from '@/components/AskCoach'
 
-export default async function AskPage() {
+export default async function AskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ about?: string }>
+}) {
   const user = await verifySession()
   if (!user) redirect('/login')
+
+  const { about } = await searchParams
+  const initialQuestion =
+    about && /^\d{4}-\d{2}-\d{2}$/.test(about) ? `How was my day on ${about}?` : undefined
 
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
@@ -20,7 +28,7 @@ export default async function AskPage() {
       </p>
 
       <div className="mt-6">
-        <AskCoach />
+        <AskCoach initialQuestion={initialQuestion} />
       </div>
     </main>
   )

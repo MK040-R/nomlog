@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   const weightLines = (weights ?? []).map((w) => `${Number(w.weight_kg).toFixed(1)} kg on ${w.logged_on}`)
 
   try {
-    const answer = await askCoach({
+    const reply = await askCoach({
       goals: summary.goals,
       consumed: summary.consumed,
       mealNames: summary.mealNames,
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
       history: parsed.data.history,
       question: parsed.data.question,
     })
-    return NextResponse.json({ answer })
+    return NextResponse.json(reply)
   } catch (err) {
     console.error('ask failed:', err)
     if (err instanceof GeminiBusyError) {
