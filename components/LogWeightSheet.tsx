@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
@@ -32,7 +33,7 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch('/api/weight', {
+      await fetchJson('/api/weight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,8 +43,6 @@ export function LogWeightSheet({ currentWeight, name, age, heightCm }: Props) {
           height_cm: ht.trim() ? Number(ht) : null,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not save.')
       setOpen(false)
       router.refresh()
     } catch (err: any) {

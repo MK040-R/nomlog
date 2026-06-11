@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+
+// Gemini calls can retry across models — give Vercel room beyond the default 10s.
+export const maxDuration = 60
 import { z } from 'zod'
 import { verifySession } from '@/lib/dal'
 import { parseMeal } from '@/lib/gemini/parse'

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { Sparkles, ArrowUp } from 'lucide-react'
 
 type Exchange = { q: string; a: string }
@@ -28,14 +29,12 @@ export function AskCoach() {
     setError(null)
     setQuestion('')
     try {
-      const res = await fetch('/api/ask', {
+      const data = await fetchJson<{ answer: string }>('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // oldest-first, capped to the last 3 — older turns drop off (ASK-05)
         body: JSON.stringify({ question: clean, history: exchanges.slice(0, 3).reverse() }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not answer that.')
       setExchanges((prev) => [{ q: clean, a: data.answer }, ...prev])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not answer that.')

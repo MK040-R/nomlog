@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { useRouter } from 'next/navigation'
 import { RotateCcw } from 'lucide-react'
 import type { FoodItem } from '@/types/app.types'
@@ -22,7 +23,7 @@ export function QuickRelog({ options }: { options: RelogOption[] }) {
     setBusyIdx(idx)
     setError(null)
     try {
-      const res = await fetch('/api/meals', {
+      await fetchJson('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -33,8 +34,6 @@ export function QuickRelog({ options }: { options: RelogOption[] }) {
           items: opt.items,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not log that.')
       setDoneIdx(idx)
       router.refresh()
       setTimeout(() => setDoneIdx(null), 2500)

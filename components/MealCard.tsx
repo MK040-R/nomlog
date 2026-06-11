@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { useRouter } from 'next/navigation'
 import { Pencil, X } from 'lucide-react'
 import type { FoodItem, MealType } from '@/types/app.types'
@@ -64,13 +65,11 @@ export function MealCard({ meal }: { meal: Meal }) {
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch(`/api/meals/${meal.id}`, {
+      await fetchJson(`/api/meals/${meal.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ meal_type: mealType, items }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not update.')
       setEditing(false)
       router.refresh()
     } catch (err: any) {

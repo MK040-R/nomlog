@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import type { FoodItem } from '@/types/app.types'
@@ -23,9 +24,7 @@ export function WhatFits() {
     setError(null)
     setLoggedIdx(null)
     try {
-      const res = await fetch('/api/what-fits', { method: 'POST' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not get suggestions.')
+      const data = await fetchJson<{ suggestions: Suggestion[] }>('/api/what-fits', { method: 'POST' })
       setSuggestions(data.suggestions)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not get suggestions.')
@@ -47,7 +46,7 @@ export function WhatFits() {
         fat_g: s.fat_g,
         fiber_g: s.fiber_g,
       }
-      const res = await fetch('/api/meals', {
+      await fetchJson('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -58,8 +57,6 @@ export function WhatFits() {
           items: [item],
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not log that.')
       setLoggedIdx(idx)
       router.refresh()
     } catch (err) {

@@ -41,6 +41,12 @@ export async function updateSession(request: NextRequest) {
     pathname === '/'
 
   if (!isAuthPath && !user) {
+    // API calls must get a JSON 401, never a redirect — otherwise fetch()
+    // follows the redirect, receives the login page's HTML, and res.json()
+    // blows up with Safari's cryptic "string did not match" error.
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Session expired.' }, { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

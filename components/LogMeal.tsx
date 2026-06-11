@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { fetchJson } from '@/lib/fetchJson'
 import { useRouter } from 'next/navigation'
 import { Mic, Square, X } from 'lucide-react'
 import type { FoodItem, MealType } from '@/types/app.types'
@@ -89,7 +90,7 @@ export function LogMeal({ date }: { date?: string }) {
     setStatus('saving')
     setError(null)
     try {
-      const res = await fetch('/api/meals', {
+      await fetchJson('/api/meals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -102,8 +103,6 @@ export function LogMeal({ date }: { date?: string }) {
           date,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Could not save.')
       reset()
       router.refresh()
     } catch (err: any) {
@@ -367,12 +366,9 @@ export function LogMeal({ date }: { date?: string }) {
 }
 
 async function callParse(text: string): Promise<Parsed> {
-  const res = await fetch('/api/parse', {
+  return fetchJson<Parsed>('/api/parse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Something went wrong.')
-  return data as Parsed
 }
