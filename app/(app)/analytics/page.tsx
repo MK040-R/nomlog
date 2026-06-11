@@ -9,11 +9,13 @@ import {
   ymdOf,
   weekdayShort,
   todayYmd,
+  shiftYmd,
   DEFAULT_GOALS,
 } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem } from '@/types/app.types'
 import { WeeklyRecap } from '@/components/WeeklyRecap'
+import { WeightCaloriesChart, type WeekPoint } from '@/components/WeightCaloriesChart'
 
 type DayTotals = { cal: number; p: number; c: number; f: number; fib: number; count: number }
 
@@ -47,7 +49,8 @@ export default async function AnalyticsPage({
   const monthStartIso = dayRange(tz, `${month}-01`).startIso
   const monthEndIso = dayRange(tz, `${month}-${String(daysInMonth).padStart(2, '0')}`).endIso
 
-  const [{ data: meals }, { data: profile }, { data: monthMeals }] = await Promise.all([
+  const sixWeeksAgoIso = dayRange(tz, shiftYmd(todayYmd(tz), -42)).startIso
+  const [{ data: meals }, { data: profile }, { data: monthMeals }, { data: weights }, { data: recentForWeeks }] = await Promise.all([
     supabase
       .from('meal_logs')
       .select('*')
@@ -60,6 +63,8 @@ export default async function AnalyticsPage({
       .select('logged_at, total_calories')
       .gte('logged_at', monthStartIso)
       .lt('logged_at', monthEndIso),
+    supabase.from('weight_logs').select('logged_on, weight_kg').gte('logged_on', shiftYmd(todayYmd(tz), -42)),
+    supabase.from('meal_logs').select('logged_at, total_calories').gte('logged_at', sixWeeksAgoIso),
   ])
 
   const rows = meals ?? []
@@ -117,6 +122,65 @@ export default async function AnalyticsPage({
   const goalY = Math.round((goalCals / scale) * chartH)
 
   const today = todayYmd(tz)
+
+  // Best / toughest logged day this week (distance from the calorie goal)
+  let bestDay: { d: string; cal: number } | null = null
+  let toughDay: { d: string; cal: number } | null = null
+  if (loggedDays.length >= 2) {
+    const sortedByDist = [...loggedDays].sort(
+      (a, b) => Math.abs(byDay[a].cal - goalCals) - Math.abs(byDay[b].cal - goalCals)
+    )
+    bestDay = { d: sortedByDist[0], cal: byDay[sortedByDist[0]].cal }
+    const worst = sortedByDist[sortedByDist.length - 1]
+    if (worst !== sortedByDist[0]) toughDay = { d: worst, cal: byDay[worst].cal }
+  }
+
+  // Macro split: % of calories from protein/carbs/fat, actual vs target
+  const pCal = avgP * 4
+  const cCal = avgC * 4
+  const fCal = avgF * 9
+  const macroCal = pCal + cCal + fCal
+  const goalMacroCal = goals.protein * 4 + goals.carbs * 4 + goals.fat * 9
+  const split =
+    macroCal > 0
+      ? {
+          p: Math.round((pCal / macroCal) * 100),
+          c: Math.round((cCal / macroCal) * 100),
+          f: Math.round((fCal / macroCal) * 100),
+          gp: Math.round(((goals.protein * 4) / goalMacroCal) * 100),
+          gc: Math.round(((goals.carbs * 4) / goalMacroCal) * 100),
+          gf: Math.round(((goals.fat * 9) / goalMacroCal) * 100),
+        }
+      : null
+
+  // Weekly weight vs avg intake (last 6 weeks, Monday-keyed)
+  const weekKey = (ymd: string) => {
+    const dow = (new Date(ymd + 'T00:00:00Z').getUTCDay() + 6) % 7
+    return shiftYmd(ymd, -dow)
+  }
+  const kcalByWeek = new Map<string, { sum: number; days: Set<string> }>()
+  for (const m of recentForWeeks ?? []) {
+    const d = ymdOf(tz, m.logged_at)
+    const wk = weekKey(d)
+    const cur = kcalByWeek.get(wk) ?? { sum: 0, days: new Set<string>() }
+    cur.sum += m.total_calories
+    cur.days.add(d)
+    kcalByWeek.set(wk, cur)
+  }
+  const weightByWeek = new Map<string, number>()
+  for (const w of [...(weights ?? [])].sort((a, b) => a.logged_on.localeCompare(b.logged_on))) {
+    weightByWeek.set(weekKey(w.logged_on), Number(w.weight_kg))
+  }
+  const allWeeks = [...new Set([...kcalByWeek.keys(), ...weightByWeek.keys()])].sort().slice(-6)
+  const weekPoints: WeekPoint[] = allWeeks.map((wk, i) => {
+    const k = kcalByWeek.get(wk)
+    return {
+      label: `W${i + 1}`,
+      weight: weightByWeek.get(wk) ?? null,
+      avgKcal: k ? Math.round(k.sum / k.days.size) : null,
+    }
+  })
+  const showWeightChart = weekPoints.filter((p) => p.weight !== null).length >= 2
 
   // Month calendar: calories per local day
   const calByDay: Record<string, number> = {}
@@ -212,6 +276,28 @@ export default async function AnalyticsPage({
 
           <div className="divider my-7" />
 
+          {(bestDay || toughDay) && (
+            <>
+              <div className="divider my-7" />
+              <section className="flex flex-col gap-1.5">
+                {bestDay && (
+                  <p className="text-[13px] text-muted-foreground">
+                    Closest to goal: <span className="font-medium text-foreground">{weekdayShort(bestDay.d)}</span>{' '}
+                    <span className="num">({bestDay.cal} kcal)</span>
+                  </p>
+                )}
+                {toughDay && (
+                  <p className="text-[13px] text-muted-foreground">
+                    Furthest from goal: <span className="font-medium text-foreground">{weekdayShort(toughDay.d)}</span>{' '}
+                    <span className="num">({toughDay.cal} kcal)</span>
+                  </p>
+                )}
+              </section>
+            </>
+          )}
+
+          <div className="divider my-7" />
+
           {/* Avg macros */}
           <section>
             <span className="eyebrow">Average macros / day</span>
@@ -222,6 +308,23 @@ export default async function AnalyticsPage({
               <MacroRow label="Fiber" value={avgFib} goal={goals.fiber} />
             </div>
           </section>
+
+          {split && (
+            <>
+              <div className="divider my-7" />
+              <section>
+                <span className="eyebrow">Where calories come from</span>
+                <div className="mt-4 flex items-center gap-6">
+                  <Donut p={split.p} c={split.c} f={split.f} />
+                  <div className="flex flex-col gap-2 text-[13px]">
+                    <SplitRow color="var(--color-primary)" label="Protein" pct={split.p} goal={split.gp} />
+                    <SplitRow color="var(--color-warning)" label="Carbs" pct={split.c} goal={split.gc} />
+                    <SplitRow color="var(--color-accent)" label="Fat" pct={split.f} goal={split.gf} />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
 
           {/* Most eaten */}
           {topFoods.length > 0 && (
@@ -237,6 +340,20 @@ export default async function AnalyticsPage({
                     </li>
                   ))}
                 </ul>
+              </section>
+            </>
+          )}
+          {showWeightChart && (
+            <>
+              <div className="divider my-7" />
+              <section>
+                <div className="flex items-baseline justify-between">
+                  <span className="eyebrow">Weight vs intake</span>
+                  <span className="text-[10px] text-muted-foreground">bars kcal/day · line kg</span>
+                </div>
+                <div className="mt-3">
+                  <WeightCaloriesChart data={weekPoints} />
+                </div>
               </section>
             </>
           )}
@@ -331,6 +448,35 @@ function dayMarkerColor(cal: number | undefined, goal: number) {
   if (r > 1.1) return 'var(--color-destructive)'
   if (r >= 0.9) return 'var(--color-success)'
   return 'var(--color-warning)'
+}
+
+function Donut({ p, c, f }: { p: number; c: number; f: number }) {
+  const R = 34
+  const CIRC = 2 * Math.PI * R
+  const seg = (pct: number) => (pct / 100) * CIRC
+  const pLen = seg(p)
+  const cLen = seg(c)
+  const fLen = Math.max(0, CIRC - pLen - cLen)
+  return (
+    <svg width="92" height="92" viewBox="0 0 92 92" role="img" aria-label="Calorie split donut">
+      <g transform="rotate(-90 46 46)">
+        <circle cx="46" cy="46" r={R} fill="none" stroke="var(--color-primary)" strokeWidth="10" strokeDasharray={`${pLen} ${CIRC - pLen}`} />
+        <circle cx="46" cy="46" r={R} fill="none" stroke="var(--color-warning)" strokeWidth="10" strokeDasharray={`${cLen} ${CIRC - cLen}`} strokeDashoffset={-pLen} />
+        <circle cx="46" cy="46" r={R} fill="none" stroke="var(--color-accent)" strokeWidth="10" strokeDasharray={`${fLen} ${CIRC - fLen}`} strokeDashoffset={-(pLen + cLen)} />
+      </g>
+    </svg>
+  )
+}
+
+function SplitRow({ color, label, pct, goal }: { color: string; label: string; pct: number; goal: number }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="num text-foreground">{pct}%</span>
+      <span className="text-[11px] text-muted-foreground">goal {goal}%</span>
+    </span>
+  )
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
