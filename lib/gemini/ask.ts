@@ -1,5 +1,5 @@
 import 'server-only'
-import { Type } from '@google/genai'
+import { SchemaType as Type } from './schema'
 import { z } from 'zod'
 import { generateStructured } from './generate'
 import { FoodItemSchema } from './parse'

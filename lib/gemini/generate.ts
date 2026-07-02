@@ -45,7 +45,7 @@ export async function generateStructured<T>(opts: {
 
   for (let attempt = 0; attempt < MODELS.length; attempt++) {
     try {
-      const res = await getAI().models.generateContent({
+      const res = await (await getAI()).models.generateContent({
         model: MODELS[attempt],
         contents: opts.prompt,
         config: {
