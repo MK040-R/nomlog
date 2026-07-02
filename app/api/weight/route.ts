@@ -66,7 +66,7 @@ export async function DELETE(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'Invalid date.' }, { status: 400 })
 
   const supabase = await createClient()
-  const { error } = await supabase.from('weight_logs').delete().eq('logged_on', parsed.data.logged_on)
+  const { error } = await supabase.from('weight_logs').delete().eq('user_id', user.id).eq('logged_on', parsed.data.logged_on)
   if (error) {
     console.error('weight DELETE failed:', error)
     return NextResponse.json({ error: 'Could not delete that entry.' }, { status: 500 })

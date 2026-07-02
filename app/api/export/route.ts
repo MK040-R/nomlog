@@ -12,10 +12,15 @@ export async function GET() {
 
   const tz = await getUserTz()
   const supabase = await createClient()
+  // Newest-first with a cap so a huge history can't OOM the route, then
+  // flipped back to the chronological order the CSV promises.
   const { data, error } = await supabase
     .from('meal_logs')
     .select('logged_at, meal_type, food_items, total_calories, raw_input')
-    .order('logged_at', { ascending: true })
+    .eq('user_id', user.id)
+    .order('logged_at', { ascending: false })
+    .limit(5000)
+  data?.reverse()
 
   if (error) {
     console.error('export failed:', error)

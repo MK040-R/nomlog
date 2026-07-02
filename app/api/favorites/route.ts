@@ -45,7 +45,7 @@ export async function DELETE(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'Nothing to remove.' }, { status: 400 })
 
   const supabase = await createClient()
-  const { error } = await supabase.from('favorite_meals').delete().eq('sig', parsed.data.sig)
+  const { error } = await supabase.from('favorite_meals').delete().eq('user_id', user.id).eq('sig', parsed.data.sig)
   if (error) {
     console.error('favorite DELETE failed:', error)
     return NextResponse.json({ error: 'Could not remove the favorite.' }, { status: 500 })

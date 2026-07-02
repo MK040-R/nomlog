@@ -18,6 +18,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabase
     .from('meal_logs')
     .select('*')
+    .eq('user_id', user.id)
     .gte('logged_at', startIso)
     .lt('logged_at', endIso)
     .order('logged_at', { ascending: true })

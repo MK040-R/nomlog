@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { generateDailyTip } from '@/lib/gemini/tip'
 import { GeminiBusyError } from '@/lib/gemini/generate'
 import { getTodaySummary } from '@/lib/today'
-import { hourNow } from '@/lib/nutrition'
+import { hourNow, todayYmd } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 
 // GET /api/tip → today's tip, generated at most once per local day and cached.
@@ -19,16 +19,21 @@ export async function GET(request: Request) {
   const refresh = new URL(request.url).searchParams.get('refresh') === '1'
   const tz = await getUserTz()
   const supabase = await createClient()
-  const { ymd, goals, consumed, mealNames } = await getTodaySummary(supabase, user.id, tz)
+  const ymd = todayYmd(tz)
 
+  // Most requests are same-day repeats — answer from the cache before
+  // fetching meals/profile, which are only needed to generate a fresh tip.
   if (!refresh) {
     const { data: cached } = await supabase
       .from('daily_tips')
       .select('tip')
+      .eq('user_id', user.id)
       .eq('tip_date', ymd)
       .maybeSingle()
     if (cached) return NextResponse.json({ tip: cached.tip, cached: true })
   }
+
+  const { goals, consumed, mealNames } = await getTodaySummary(supabase, user.id, tz)
 
   try {
     const tip = await generateDailyTip({ goals, consumed, mealNames, hourLocal: hourNow(tz) })

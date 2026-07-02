@@ -52,6 +52,7 @@ export async function PATCH(
       ...totals,
     })
     .eq('id', id)
+    .eq('user_id', user.id)
 
   if (error) {
     console.error('meals PATCH failed:', error)
@@ -71,7 +72,7 @@ export async function DELETE(
 
   const { id } = await params
   const supabase = await createClient()
-  const { error } = await supabase.from('meal_logs').delete().eq('id', id)
+  const { error } = await supabase.from('meal_logs').delete().eq('id', id).eq('user_id', user.id)
 
   if (error) {
     console.error('meals DELETE failed:', error)

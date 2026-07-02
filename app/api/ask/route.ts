@@ -37,18 +37,23 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const days = lastNDays(tz, 7)
   const { startIso } = dayRange(tz, days[0])
-  const { endIso } = dayRange(tz, days[6])
+  // Week query stops at end of yesterday — today's meals already come back
+  // in getTodaySummary, so fetching them again here would be a double read.
+  const { endIso: yesterdayEndIso } = dayRange(tz, days[5])
 
   const [summary, { data: weekMeals }, { data: weights }] = await Promise.all([
     getTodaySummary(supabase, user.id, tz),
     supabase
       .from('meal_logs')
       .select('logged_at, total_calories')
+      .eq('user_id', user.id)
       .gte('logged_at', startIso)
-      .lt('logged_at', endIso),
+      .lt('logged_at', yesterdayEndIso)
+      .limit(500),
     supabase
       .from('weight_logs')
       .select('logged_on, weight_kg')
+      .eq('user_id', user.id)
       .order('logged_on', { ascending: false })
       .limit(3),
   ])
@@ -58,6 +63,7 @@ export async function POST(request: Request) {
     const d = ymdOf(tz, m.logged_at)
     calByDay[d] = (calByDay[d] ?? 0) + m.total_calories
   }
+  if (summary.consumed.calories > 0) calByDay[days[6]] = summary.consumed.calories
   const weekLines = days.map((d) => `${d}: ${calByDay[d] ? `${calByDay[d]} kcal` : 'nothing logged'}`)
   const weightLines = (weights ?? []).map((w) => `${Number(w.weight_kg).toFixed(1)} kg on ${w.logged_on}`)
 
