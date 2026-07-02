@@ -6,7 +6,7 @@ import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { generateWeeklyRecap } from '@/lib/gemini/recap'
 import { GeminiBusyError } from '@/lib/gemini/generate'
-import { dayRange, ymdOf, todayYmd, shiftYmd, lastNDays, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, ymdOf, todayYmd, shiftYmd, lastNDays, goalsFor } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 
 // GET /api/recap → a paragraph on the past 7 days, generated at most once per
@@ -23,6 +23,7 @@ export async function GET() {
   const { data: cached } = await supabase
     .from('weekly_recaps')
     .select('recap')
+    .eq('user_id', user.id)
     .eq('week_start', weekStart)
     .maybeSingle()
   if (cached) return NextResponse.json({ recap: cached.recap, cached: true })
@@ -34,23 +35,19 @@ export async function GET() {
     supabase
       .from('meal_logs')
       .select('logged_at, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g, food_items')
+      .eq('user_id', user.id)
       .gte('logged_at', startIso)
-      .lt('logged_at', endIso),
+      .lt('logged_at', endIso)
+      .limit(300),
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('weight_logs').select('logged_on, weight_kg').order('logged_on', { ascending: false }).limit(5),
+    supabase.from('weight_logs').select('logged_on, weight_kg').eq('user_id', user.id).order('logged_on', { ascending: false }).limit(5),
   ])
 
   const rows = meals ?? []
   // A recap of an empty week would just be filler — skip quietly.
   if (rows.length === 0) return NextResponse.json({ recap: null })
 
-  const goalCalories = profile?.goal_calories ?? DEFAULT_GOALS.goal_calories
-  const macroGoals = {
-    protein: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
-    carbs: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
-    fat: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
-    fiber: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
-  }
+  const { calories: goalCalories, ...macroGoals } = goalsFor(profile)
 
   const byDay: Record<string, { cal: number; p: number; c: number; f: number; fib: number }> = {}
   const foodCount: Record<string, number> = {}

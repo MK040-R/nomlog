@@ -154,3 +154,42 @@ export const DEFAULT_GOALS = {
   goal_fat_g: 65,
   goal_fiber_g: 30,
 }
+
+/**
+ * Macro targets that follow from a calorie goal, on a standard balanced
+ * split: 25% protein / 45% carbs / 30% fat (kcal), fiber 14 g per 1000 kcal
+ * (USDA guideline). Used everywhere a macro goal is missing so goals always
+ * cohere with the calorie goal instead of falling back to fixed numbers.
+ */
+export function macrosForCalories(calories: number) {
+  return {
+    protein: Math.round((calories * 0.25) / 4),
+    carbs: Math.round((calories * 0.45) / 4),
+    fat: Math.round((calories * 0.3) / 9),
+    fiber: Math.round((calories / 1000) * 14),
+  }
+}
+
+type GoalsProfile = {
+  goal_calories?: number | null
+  goal_protein_g?: number | null
+  goal_carbs_g?: number | null
+  goal_fat_g?: number | null
+  goal_fiber_g?: number | null
+} | null
+
+/**
+ * The user's effective goals: their calorie goal (or the default), with any
+ * unset macro derived from that calorie goal via macrosForCalories().
+ */
+export function goalsFor(profile: GoalsProfile) {
+  const calories = profile?.goal_calories ?? DEFAULT_GOALS.goal_calories
+  const derived = macrosForCalories(calories)
+  return {
+    calories,
+    protein: profile?.goal_protein_g ?? derived.protein,
+    carbs: profile?.goal_carbs_g ?? derived.carbs,
+    fat: profile?.goal_fat_g ?? derived.fat,
+    fiber: profile?.goal_fiber_g ?? derived.fiber,
+  }
+}

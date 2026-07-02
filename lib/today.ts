@@ -1,34 +1,41 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/types/database.types'
 import type { FoodItem } from '@/types/app.types'
-import { dayRange, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, goalsFor } from '@/lib/nutrition'
+
+type QueryClient = {
+  from: (table: string) => any
+}
+
+type MealRow = {
+  meal_type: string
+  food_items: unknown
+  total_calories: number
+  total_protein_g: number | string
+  total_carbs_g: number | string
+  total_fat_g: number | string
+  total_fiber_g: number | string
+}
 
 /**
  * Goals, consumed totals and meal names for the current day in the user's zone.
  * Shared by the dashboard-adjacent AI routes (tip, what-fits) so they all
  * ground in the same numbers the dashboard shows.
  */
-export async function getTodaySummary(supabase: SupabaseClient<Database>, userId: string, tz: string) {
+export async function getTodaySummary(supabase: QueryClient, userId: string, tz: string) {
   const { startIso, endIso, ymd } = dayRange(tz)
 
   const [{ data: meals }, { data: profile }] = await Promise.all([
     supabase
       .from('meal_logs')
       .select('meal_type, food_items, total_calories, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g')
+      .eq('user_id', userId)
       .gte('logged_at', startIso)
       .lt('logged_at', endIso),
     supabase.from('user_profiles').select('*').eq('id', userId).maybeSingle(),
   ])
 
-  const rows = meals ?? []
-  const goals = {
-    calories: profile?.goal_calories ?? DEFAULT_GOALS.goal_calories,
-    protein: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
-    carbs: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
-    fat: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
-    fiber: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
-  }
+  const rows: MealRow[] = meals ?? []
+  const goals = goalsFor(profile)
   const consumed = rows.reduce(
     (a, m) => ({
       calories: a.calories + m.total_calories,
