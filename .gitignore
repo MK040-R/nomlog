@@ -34,8 +34,16 @@ yarn-error.log*
 .env
 .env.local
 .env*.local
+.env.vercel
 # Allow .env.example to be committed
 !.env.example
+
+# not part of the web app (iOS project, design exports, planning docs, local agent config)
+/NomLog-iOS/
+/Nomlog_designs/
+/Nomlog_ Your Daily Bites (2)/
+*.xlsx
+/.claude/
 
 # vercel
 .vercel

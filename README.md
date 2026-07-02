@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NomLog
 
-## Getting Started
+Voice-first food logging. Next.js (App Router) + Supabase (Postgres, auth) + Gemini. Also serves as the backend for the native iOS app in `NomLog-iOS/`.
 
-First, run the development server:
+## Running the app
+
+### Testing the iOS app in the simulator (or just using the app): production mode
+
+```bash
+rm -rf .next && npm run build && npm start
+```
+
+This serves precompiled, optimized code at http://localhost:3000 — the simulator points there by default. **Always use this when testing the iOS app.** The dev server (below) compiles each route on first hit and can take minutes per screen, which makes the app feel broken.
+
+### Editing web code: dev mode
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Use only while actively changing web code (hot reload). If the dev server hangs and never binds, delete `.next` and retry.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` and fill in:
 
-## Learn More
+| Variable | What it is |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key (server-only; account deletion) |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `NEXT_PUBLIC_SITE_URL` | The app's public URL (auth redirects) |
 
-To learn more about Next.js, take a look at the following resources:
+## Deploying to Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push this repo to GitHub and import it at [vercel.com/new](https://vercel.com/new) (framework auto-detected as Next.js; no build settings needed).
+2. In the Vercel project settings → Environment Variables, add every variable from the table above. Set `NEXT_PUBLIC_SITE_URL` to the Vercel URL (e.g. `https://nomlog.vercel.app`).
+3. In the Supabase dashboard → Authentication → URL Configuration, add the Vercel URL to Site URL / Redirect URLs so Google sign-in redirects back correctly.
+4. Deploy. Then point the iOS app at production: change `apiBase` in `NomLog-iOS/NomLog/App/SupabaseConfig.swift` from `http://localhost:3000` to the Vercel URL and rebuild the app.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Note: the Gemini free tier allows ~20 requests/day/model — tips and recaps are cached server-side (one per day/week per user) to stay under it.

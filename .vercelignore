@@ -1,0 +1,8 @@
+# Not part of the web app — keep uploads small and builds clean
+NomLog-iOS
+Nomlog_designs
+Nomlog_ Your Daily Bites (2)
+*.xlsx
+.claude
+.env*
+!.env.example

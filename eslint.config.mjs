@@ -11,6 +11,12 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "**/build/**",
+    "NomLog-iOS/**",
+    "Nomlog_ Your Daily Bites (2)/**",
+    "Nomlog_designs/**",
+    ".claude/**",
+    ".planning/**",
     "next-env.d.ts",
   ]),
 ]);
