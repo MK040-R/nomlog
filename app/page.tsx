@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 
-// Root route is just a doorway: logged-in users go to the dashboard,
-// everyone else goes to login. The proxy middleware handles the logged-in case;
-// this covers the logged-out case.
+// Root route is a doorway: logged-in users are sent to the dashboard by the
+// proxy middleware; everyone else starts at the onboarding flow, which ends at
+// sign-in (and skips straight there for returning visitors).
 export default function Home() {
-  redirect('/login')
+  redirect('/welcome')
 }

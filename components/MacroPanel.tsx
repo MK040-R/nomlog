@@ -6,10 +6,10 @@ import type { FoodItem } from '@/types/app.types'
 type Totals = { protein: number; carbs: number; fat: number; fiber: number }
 
 const MACROS = [
-  { key: 'protein', label: 'Protein', field: 'protein_g' },
-  { key: 'carbs', label: 'Carbs', field: 'carbs_g' },
-  { key: 'fat', label: 'Fat', field: 'fat_g' },
-  { key: 'fiber', label: 'Fiber', field: 'fiber_g' },
+  { key: 'protein', label: 'Protein', field: 'protein_g', color: 'var(--color-tomato)' },
+  { key: 'carbs', label: 'Carbs', field: 'carbs_g', color: 'var(--color-mustard)' },
+  { key: 'fat', label: 'Fat', field: 'fat_g', color: 'var(--color-pickle)' },
+  { key: 'fiber', label: 'Fiber', field: 'fiber_g', color: 'var(--color-peach)' },
 ] as const
 
 type MacroKey = (typeof MACROS)[number]['key']
@@ -40,7 +40,7 @@ export function MacroPanel({ consumed, goals, items }: { consumed: Totals; goals
 
   return (
     <div>
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-2">
         {MACROS.map((m) => {
           const value = consumed[m.key]
           const goal = goals[m.key]
@@ -52,20 +52,19 @@ export function MacroPanel({ consumed, goals, items }: { consumed: Totals; goals
               onClick={() => setOpen(selected ? null : m.key)}
               aria-expanded={selected}
               aria-label={`${m.label}: see which foods contributed`}
-              className="flex w-[22%] flex-col text-left transition-opacity active:opacity-60"
+              className="flex flex-1 flex-col text-left transition-transform active:scale-95"
             >
-              <span className="num text-[20px] font-medium leading-none text-foreground">
-                {Math.round(value)}
-                <span className="text-[12px] font-normal text-muted-foreground">g</span>
-              </span>
-              <span className="eyebrow mt-1.5" style={selected ? { color: 'var(--color-primary)' } : undefined}>
+              <span
+                className="text-[9px] font-bold uppercase leading-none"
+                style={{ color: selected ? 'var(--color-tomato)' : 'color-mix(in oklab, var(--color-ink) 70%, transparent)' }}
+              >
                 {m.label}
               </span>
-              <div className="mt-2 h-px w-full bg-muted">
-                <div
-                  className="h-full"
-                  style={{ width: `${pct}%`, backgroundColor: selected ? 'var(--color-primary)' : 'color-mix(in oklab, var(--color-foreground) 30%, transparent)' }}
-                />
+              <span className="num mt-0.5 text-[10px] font-semibold leading-tight text-ink/60">
+                {Math.round(value)}/{goal}g
+              </span>
+              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full border-[1.5px] border-ink bg-white">
+                <div className="h-full" style={{ width: `${pct}%`, backgroundColor: m.color }} />
               </div>
             </button>
           )
@@ -73,20 +72,20 @@ export function MacroPanel({ consumed, goals, items }: { consumed: Totals; goals
       </div>
 
       {active && (
-        <div className="mt-4 rounded-2xl bg-muted/50 px-4 py-3">
+        <div className="animate-pop mt-3 rounded-2xl border-2 border-ink bg-white px-4 py-3">
           {contributors.length === 0 ? (
             <p className="text-[12px] text-muted-foreground">Nothing logged with {active.label.toLowerCase()} yet.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {contributors.map((c) => (
                 <div key={c.name} className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">{c.name}</span>
-                  <div className="h-px w-16 shrink-0 bg-border">
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-foreground">{c.name}</span>
+                  <div className="h-2 w-16 shrink-0 overflow-hidden rounded-full border border-ink/30 bg-muted">
                     <div
-                      className="h-full"
+                      className="h-full rounded-full"
                       style={{
                         width: `${Math.min(100, Math.round((c.grams / Math.max(activeTotal, 1)) * 100))}%`,
-                        backgroundColor: 'var(--color-primary)',
+                        backgroundColor: active.color,
                       }}
                     />
                   </div>

@@ -9,6 +9,7 @@ import { fetchJson } from '@/lib/fetchJson'
 // unavailable — the dashboard must never look broken because of a tip.
 export function DailyTip() {
   const [tip, setTip] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
@@ -18,6 +19,9 @@ export function DailyTip() {
         if (!cancelled && data?.tip) setTip(data.tip)
       })
       .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }
@@ -35,6 +39,16 @@ export function DailyTip() {
     }
   }
 
+  // Quiet shimmer while the tip loads so it doesn't pop in; still renders
+  // nothing when no tip is available — the dashboard must never look broken.
+  if (loading && !tip) {
+    return (
+      <p className="mt-3 flex items-start gap-2">
+        <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.5} />
+        <span className="mt-1 h-3 w-48 animate-pulse rounded-full bg-muted" />
+      </p>
+    )
+  }
   if (!tip) return null
 
   return (

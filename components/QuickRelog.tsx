@@ -49,10 +49,10 @@ export function QuickRelog({ options, yesterday }: { options: RelogOption[]; yes
     <div>
       {options.length > 0 && (
         <>
-          <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-            <RotateCcw className="h-3 w-3" strokeWidth={1.5} /> Log again
+          <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-ink/50">
+            <RotateCcw className="h-3 w-3" strokeWidth={2.4} /> Log again
           </span>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {options.map((o, i) => {
               const key = `r${i}`
               return (
@@ -60,7 +60,7 @@ export function QuickRelog({ options, yesterday }: { options: RelogOption[]; yes
                   key={key}
                   onClick={() => log(key, o.items, mealTypeForHour(new Date().getHours()), o.label)}
                   disabled={busyKey !== null}
-                  className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-[12px] text-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
+                  className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-white px-2.5 py-1 text-[11px] font-bold text-foreground transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
                 >
                   {doneKey === key ? (
                     <span style={{ color: 'var(--color-success)' }}>Logged ✓</span>
@@ -81,8 +81,8 @@ export function QuickRelog({ options, yesterday }: { options: RelogOption[]; yes
 
       {yesterday.length > 0 && (
         <>
-          <span className="mt-3 block text-[11px] font-medium text-muted-foreground">Same as yesterday</span>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <span className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-ink/50">Same as yesterday</span>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {yesterday.map((y) => {
               const key = `y${y.meal_type}`
               return (
@@ -90,7 +90,7 @@ export function QuickRelog({ options, yesterday }: { options: RelogOption[]; yes
                   key={key}
                   onClick={() => log(key, y.items, y.meal_type, y.label)}
                   disabled={busyKey !== null}
-                  className="rounded-full border border-border px-3 py-1.5 text-[12px] capitalize text-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
+                  className="rounded-full border-2 border-ink bg-mustard px-2.5 py-1 text-[11px] font-bold capitalize text-ink transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
                 >
                   {doneKey === key ? (
                     <span style={{ color: 'var(--color-success)' }}>Logged ✓</span>

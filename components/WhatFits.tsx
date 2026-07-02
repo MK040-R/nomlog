@@ -69,45 +69,58 @@ export function WhatFits() {
   return (
     <div>
       {suggestions === null ? (
-        <button onClick={fetchSuggestions} disabled={loading} className="btn-ghost w-full text-[13px]">
-          <Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
-          {loading ? 'Thinking…' : 'What can I eat now?'}
+        <button
+          onClick={fetchSuggestions}
+          disabled={loading}
+          className="chunk chunk-hover w-full !bg-mustard p-3 text-left disabled:opacity-70"
+        >
+          <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-ink/70">
+            <Sparkles className="h-3 w-3" strokeWidth={2.6} /> {loading ? 'Thinking…' : 'What can I eat now?'}
+          </span>
+          <span className="mt-0.5 block text-[13px] font-bold text-ink">
+            {loading ? 'Checking your budget…' : 'Tap for ideas that fit what’s left today'}
+          </span>
         </button>
       ) : (
-        <div className="flex flex-col">
-          {suggestions.map((s, i) => (
-            <div key={i} className={i > 0 ? 'mt-3 border-t border-border/60 pt-3' : ''}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-display text-[15px] font-medium text-foreground">
-                    {s.name} <span className="text-[12px] font-normal text-muted-foreground">· {s.portion}</span>
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-muted-foreground">{s.reason}</p>
-                  <p className="num mt-1 text-[12px] text-muted-foreground">
-                    {Math.round(s.calories_kcal)} kcal · P {Math.round(s.protein_g)} · C {Math.round(s.carbs_g)} · F{' '}
-                    {Math.round(s.fat_g)} · Fi {Math.round(s.fiber_g)}
-                  </p>
+        <div className="chunk flex flex-col !bg-mustard p-3">
+          <span className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-ink/70">
+            <Sparkles className="h-3 w-3" strokeWidth={2.6} /> What fits right now
+          </span>
+          <div className="flex flex-col gap-2">
+            {suggestions.map((s, i) => (
+              <div key={i} className="rounded-xl border-2 border-ink bg-cream px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold text-foreground">
+                      {s.name} <span className="text-[11px] font-semibold text-ink/55">· {s.portion}</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-ink/65">{s.reason}</p>
+                    <p className="num mt-0.5 text-[11px] font-semibold text-ink/55">
+                      {Math.round(s.calories_kcal)} kcal · P {Math.round(s.protein_g)} · C {Math.round(s.carbs_g)} · F{' '}
+                      {Math.round(s.fat_g)} · Fi {Math.round(s.fiber_g)}
+                    </p>
+                  </div>
+                  {loggedIdx === i ? (
+                    <span className="shrink-0 text-[11px] font-bold" style={{ color: 'var(--color-success)' }}>
+                      Logged ✓
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => logSuggestion(s, i)}
+                      disabled={loggingIdx !== null}
+                      className="sticker shrink-0 !text-[11px] transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
+                    >
+                      {loggingIdx === i ? '…' : '+ Log'}
+                    </button>
+                  )}
                 </div>
-                {loggedIdx === i ? (
-                  <span className="shrink-0 text-[11px] font-medium" style={{ color: 'var(--color-success)' }}>
-                    Logged ✓
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => logSuggestion(s, i)}
-                    disabled={loggingIdx !== null}
-                    className="h-7 shrink-0 rounded-full border border-border px-3 text-[11px] font-medium text-primary transition-opacity hover:opacity-70 disabled:opacity-40"
-                  >
-                    {loggingIdx === i ? '…' : 'Log'}
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
           <button
             onClick={fetchSuggestions}
             disabled={loading}
-            className="mt-3 self-start text-[11px] font-medium text-muted-foreground transition-opacity hover:opacity-70"
+            className="mt-2 self-start text-[11px] font-bold text-ink/70 underline transition-opacity hover:opacity-70"
           >
             {loading ? 'Thinking…' : 'Suggest something else'}
           </button>

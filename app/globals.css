@@ -1,33 +1,51 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   NomLog · Design System v1.0
-   Warm, minimal, paper-like. Muted terracotta accent. Fraunces + Inter.
+   NomLog · Design System v2.0 — "warm, sticky, joyful"
+   Cream + coffee-bean ink + tomato. Fraunces + DM Sans + JetBrains Mono.
+   Neobrutalist "sticker" language: bold ink borders + hard offset shadows.
+   Tokens sourced verbatim from the finalized Figma / Lovable design.
    ========================================================================== */
 
 @theme {
-  /* Color — OKLCH, exposed as semantic tokens (no raw hex in components) */
-  --color-background: oklch(0.975 0.012 75);
-  --color-foreground: oklch(0.24 0.025 40);
-  --color-card: oklch(0.99 0.008 80);
-  --color-muted: oklch(0.94 0.014 70);
-  --color-muted-foreground: oklch(0.48 0.022 45);
-  --color-subtle: oklch(0.92 0.018 65);
-  --color-primary: oklch(0.605 0.115 38);
-  --color-primary-foreground: oklch(0.985 0.01 80);
-  --color-primary-soft: oklch(0.92 0.04 38);
-  --color-accent: oklch(0.88 0.05 40);
-  --color-border: oklch(0.89 0.018 60);
-  --color-ring: oklch(0.605 0.115 38);
-  --color-success: oklch(0.58 0.08 145);
-  --color-warning: oklch(0.7 0.13 60);
-  --color-destructive: oklch(0.52 0.16 25);
+  /* --- Brand palette (OKLCH) --- */
+  --color-cream: oklch(97% 0.025 80);
+  --color-ink: oklch(22% 0.04 40);
+  --color-tomato: oklch(66% 0.24 15);
+  --color-mustard: oklch(85% 0.17 85);
+  --color-peach: oklch(82% 0.13 50);
+  --color-pickle: oklch(72% 0.17 140);
+  --color-grape: oklch(55% 0.2 320);
 
-  /* Type */
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  /* --- Semantic tokens (names kept stable so components keep working) --- */
+  --color-background: oklch(97% 0.025 80); /* cream */
+  --color-foreground: oklch(22% 0.04 40); /* ink */
+  --color-card: oklch(100% 0 0); /* white */
+  --color-popover: oklch(100% 0 0);
+  --color-muted: oklch(94% 0.025 80);
+  --color-muted-foreground: oklch(45% 0.04 40);
+  --color-subtle: oklch(93% 0.05 80);
+  --color-primary: oklch(66% 0.24 15); /* tomato */
+  --color-primary-foreground: oklch(99% 0.01 80);
+  --color-primary-soft: oklch(90% 0.07 25); /* soft tomato tint */
+  --color-accent: oklch(85% 0.17 85); /* mustard */
+  --color-accent-foreground: oklch(22% 0.04 40);
+  --color-border: oklch(88% 0.02 80); /* subtle hairline */
+  --color-ring: oklch(66% 0.24 15);
+  --color-success: oklch(65% 0.18 145); /* pickle green */
+  --color-warning: oklch(85% 0.17 85); /* mustard */
+  --color-destructive: oklch(60% 0.24 25);
 
+  /* --- Type --- */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* --- Shape + signature shadows --- */
   --radius: 1rem;
+  --shadow-chunk: 6px 6px 0 0 var(--color-ink);
+  --shadow-chunk-lg: 10px 10px 0 0 var(--color-ink);
+  --shadow-chunk-pink: 8px 8px 0 0 var(--color-tomato);
 }
 
 html {
@@ -37,12 +55,10 @@ html {
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
 }
 
-/* Touch responsiveness: kill the mobile-Safari tap delay and the grey flash so
-   a single tap registers immediately on buttons, links and controls. */
+/* Touch responsiveness: kill the mobile-Safari tap delay and grey flash. */
 button,
 a,
 select,
@@ -58,92 +74,244 @@ html {
 
 /* --- Signature helpers ---------------------------------------------------- */
 
-/* Eyebrow / section label — tiny, uppercase, wide-tracked */
+/* Eyebrow / section label — small, uppercase, wide-tracked */
 .eyebrow {
   font-family: var(--font-sans);
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   color: var(--color-muted-foreground);
 }
 
-/* Any number that updates: display serif + tabular figures */
+/* Any number that updates: mono + tabular figures */
 .num {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* The only structural separator in the app */
+/* Soft separator */
 .divider {
-  height: 1px;
+  height: 2px;
   width: 100%;
-  background-color: color-mix(in oklab, var(--color-border) 60%, transparent);
+  background-color: color-mix(in oklab, var(--color-ink) 12%, transparent);
 }
 
-/* Primary pill button */
-.btn-primary {
+/* Sticker pill — small label chip (border + hard shadow) */
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid var(--color-ink);
+  box-shadow: 3px 3px 0 0 var(--color-ink);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+/* Chunk card — bold-bordered, hard-shadowed surface */
+.chunk {
+  border: 3px solid var(--color-ink);
+  box-shadow: var(--shadow-chunk);
+  background: #fff;
+  border-radius: 1.25rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+@media (hover: hover) {
+  .chunk-hover:hover {
+    box-shadow: var(--shadow-chunk-lg);
+    transform: translate(-2px, -2px) rotate(-0.5deg);
+  }
+}
+
+/* Primary pill button — the sticker/chunk language */
+.btn-primary,
+.btn-nom {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border-radius: 9999px;
-  background-color: var(--color-primary);
-  color: var(--color-primary-foreground);
+  gap: 0.5rem;
+  border: 3px solid var(--color-ink);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 1.4rem;
+  height: 48px;
   font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 14px;
-  height: 44px;
-  padding: 0 20px;
-  border: none;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  box-shadow: 4px 4px 0 0 var(--color-ink);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-/* Hover only on real pointer devices — on touch, the first tap must activate,
-   not get absorbed by a hover state. */
 @media (hover: hover) {
-  .btn-primary:hover { opacity: 0.7; }
+  .btn-primary:hover,
+  .btn-nom:hover {
+    box-shadow: 6px 6px 0 0 var(--color-ink);
+    transform: translate(-2px, -2px);
+  }
 }
-.btn-primary:active { opacity: 0.6; }
-.btn-primary:disabled { opacity: 0.5; cursor: default; }
+.btn-primary:active,
+.btn-nom:active {
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+  transform: translate(2px, 2px);
+}
+.btn-primary:disabled,
+.btn-nom:disabled {
+  opacity: 0.5;
+  cursor: default;
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  transform: none;
+}
 
-/* Ghost pill button */
-.btn-ghost {
+/* Ghost pill button — bordered white, tomato shadow on hover */
+.btn-ghost,
+.btn-nom-ghost {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  border-radius: 9999px;
-  background-color: transparent;
-  color: var(--color-muted-foreground);
+  gap: 0.5rem;
+  border: 3px solid var(--color-ink);
+  background: #fff;
+  color: var(--color-ink);
+  border-radius: 999px;
+  padding: 0 1.4rem;
+  height: 48px;
   font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 14px;
-  height: 44px;
-  padding: 0 20px;
-  border: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 4px 4px 0 0 var(--color-ink);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 @media (hover: hover) {
-  .btn-ghost:hover { opacity: 0.7; }
+  .btn-ghost:hover,
+  .btn-nom-ghost:hover {
+    box-shadow: 6px 6px 0 0 var(--color-tomato);
+    transform: translate(-2px, -2px);
+  }
 }
-.btn-ghost:active { opacity: 0.6; }
-.btn-ghost:disabled { opacity: 0.5; }
+.btn-ghost:active,
+.btn-nom-ghost:active {
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+  transform: translate(2px, 2px);
+}
+.btn-ghost:disabled,
+.btn-nom-ghost:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
-/* Minimal input — transparent, bottom hairline only */
+/* Minimal input — bottom border, focus tomato */
 .field {
   width: 100%;
   background-color: transparent;
   border: none;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 2px solid color-mix(in oklab, var(--color-ink) 20%, transparent);
   padding: 6px 0;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--color-foreground);
   outline: none;
   transition: border-color 0.15s ease;
 }
 .field:focus {
   border-bottom-color: var(--color-primary);
+}
+
+/* Sloppy mustard marker under a word */
+.highlight {
+  position: relative;
+  display: inline-block;
+}
+.highlight::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0.1em 0;
+  height: 0.45em;
+  background: var(--color-mustard);
+  z-index: -1;
+  transform: rotate(-1.2deg) skewX(-4deg);
+  border-radius: 2px;
+}
+
+/* Chunky bordered input */
+.input-nom {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  border: 3px solid var(--color-ink);
+  background: #fff;
+  font-size: 1rem;
+  color: var(--color-foreground);
+  outline: none;
+  transition: box-shadow 0.2s ease;
+}
+.input-nom::placeholder {
+  color: oklch(55% 0.03 40);
+}
+.input-nom:focus {
+  box-shadow: 4px 4px 0 0 var(--color-mustard);
+}
+
+/* Signature animations */
+@keyframes pop {
+  0% { opacity: 0; transform: scale(0.85) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-12px) rotate(-3deg); }
+}
+@keyframes wobble {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  50% { transform: rotate(2deg) scale(1.04); }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-tomato) 60%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; }
+}
+.animate-pop { animation: pop 0.3s ease-out both; }
+.animate-bounce-soft { animation: bounce-soft 1.8s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 1.8s ease-out infinite; }
+
+/* Full-width auth buttons (Apple = ink fill, Google = white) */
+.auth-btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 52px;
+  border-radius: 999px;
+  border: 3px solid var(--color-ink);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 4px 4px 0 0 var(--color-ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (hover: hover) {
+  .auth-btn:hover {
+    box-shadow: 6px 6px 0 0 var(--color-ink);
+    transform: translate(-2px, -2px);
+  }
+}
+.auth-btn:active {
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+  transform: translate(2px, 2px);
+}
+.auth-btn--ink {
+  background: var(--color-ink);
+  color: #fff;
+}
+.auth-btn--white {
+  background: #fff;
+  color: var(--color-ink);
 }

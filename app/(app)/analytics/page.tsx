@@ -10,12 +10,13 @@ import {
   weekdayShort,
   todayYmd,
   shiftYmd,
-  DEFAULT_GOALS,
+  goalsFor,
 } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem } from '@/types/app.types'
 import { WeeklyRecap } from '@/components/WeeklyRecap'
-import { WeightCaloriesChart, type WeekPoint } from '@/components/WeightCaloriesChart'
+import { WeightCaloriesChart } from '@/components/LazyCharts'
+import { type WeekPoint } from '@/components/WeightCaloriesChart'
 
 type DayTotals = { cal: number; p: number; c: number; f: number; fib: number; count: number }
 
@@ -54,27 +55,26 @@ export default async function AnalyticsPage({
     supabase
       .from('meal_logs')
       .select('*')
+      .eq('user_id', user.id)
       .gte('logged_at', startIso)
       .lt('logged_at', endIso)
-      .order('logged_at', { ascending: true }),
+      .order('logged_at', { ascending: true })
+      .limit(300),
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('meal_logs')
       .select('logged_at, total_calories')
+      .eq('user_id', user.id)
       .gte('logged_at', monthStartIso)
-      .lt('logged_at', monthEndIso),
-    supabase.from('weight_logs').select('logged_on, weight_kg').gte('logged_on', shiftYmd(todayYmd(tz), -42)),
-    supabase.from('meal_logs').select('logged_at, total_calories').gte('logged_at', sixWeeksAgoIso),
+      .lt('logged_at', monthEndIso)
+      .limit(500),
+    supabase.from('weight_logs').select('logged_on, weight_kg').eq('user_id', user.id).gte('logged_on', shiftYmd(todayYmd(tz), -42)).limit(100),
+    supabase.from('meal_logs').select('logged_at, total_calories').eq('user_id', user.id).gte('logged_at', sixWeeksAgoIso).limit(500),
   ])
 
   const rows = meals ?? []
-  const goalCals = profile?.goal_calories ?? DEFAULT_GOALS.goal_calories
-  const goals = {
-    protein: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
-    carbs: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
-    fat: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
-    fiber: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
-  }
+  const goals = goalsFor(profile)
+  const goalCals = goals.calories
 
   const byDay: Record<string, DayTotals> = {}
   for (const d of days) byDay[d] = { cal: 0, p: 0, c: 0, f: 0, fib: 0, count: 0 }
@@ -201,32 +201,35 @@ export default async function AnalyticsPage({
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
       {/* Top bar */}
-      <div className="mb-10 flex items-center justify-between">
-        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
-        <span className="eyebrow">Insights</span>
+      <div className="mb-8 flex items-center justify-between">
+        <span className="font-display text-[17px] font-black lowercase tracking-tight text-foreground">nomlog</span>
+        <span className="text-[12px] font-bold text-ink/60">Insights</span>
       </div>
 
-      <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">How it&apos;s adding up</h1>
+      <h1 className="font-display text-[26px] font-black leading-tight tracking-tight text-foreground">
+        How it&apos;s <span className="highlight">adding up</span>
+      </h1>
       <p className="mt-1 text-[13px] text-muted-foreground">Last 7 days</p>
       <WeeklyRecap />
 
       {loggedDays.length === 0 ? (
-        <p className="mt-8 text-[13px] text-muted-foreground">
-          No meals logged this week yet. Once you start logging, your trends show up here.
-        </p>
+        <div className="mt-8 rounded-2xl border-[3px] border-dashed border-ink/40 p-6 text-center">
+          <p className="font-display text-[18px] font-black text-foreground">Log a few days to unlock</p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Once you start logging, your trends show up here.
+          </p>
+        </div>
       ) : (
         <>
-          <div className="divider my-7" />
-
           {/* Calorie bar chart */}
-          <section>
+          <section className="chunk mt-6 p-4">
             <div className="flex items-baseline justify-between">
-              <span className="eyebrow">Calories / day</span>
-              <span className="num text-[11px] text-muted-foreground">goal {goalCals}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Calories / day</span>
+              <span className="num text-[11px] font-semibold text-muted-foreground">goal {goalCals}</span>
             </div>
-            <div className="relative mt-4 flex items-end justify-between gap-2" style={{ height: chartH }}>
+            <div className="relative mt-4 flex items-end justify-between gap-1.5" style={{ height: chartH }}>
               <div
-                className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border"
+                className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-ink/30"
                 style={{ bottom: goalY }}
               />
               {days.map((d) => {
@@ -243,155 +246,138 @@ export default async function AnalyticsPage({
                     className="flex flex-1 flex-col items-center justify-end gap-1.5 transition-opacity active:opacity-60"
                     style={{ height: chartH }}
                   >
-                    {t.cal > 0 && <span className="num text-[9px] text-muted-foreground">{t.cal}</span>}
+                    {t.cal > 0 && <span className="num text-[9px] font-semibold text-muted-foreground">{t.cal}</span>}
                     <div
-                      className="w-full rounded-t-sm"
+                      className={`w-full rounded-t-md ${t.cal > 0 ? 'border-2 border-ink' : ''} ${over ? 'bg-tomato' : 'bg-pickle'}`}
                       style={{
-                        height: Math.max(h, t.cal > 0 ? 3 : 0),
-                        backgroundColor: over ? 'var(--color-destructive)' : 'var(--color-primary)',
-                        opacity: isToday ? 1 : 0.5,
+                        height: Math.max(h, t.cal > 0 ? 6 : 0),
+                        opacity: isToday || !t.cal ? 1 : 0.75,
                       }}
                     />
                   </Link>
                 )
               })}
             </div>
-            <div className="mt-2 flex justify-between gap-2">
+            <div className="mt-2 flex justify-between gap-1.5">
               {days.map((d) => (
-                <span key={d} className="flex-1 text-center text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+                <span key={d} className="flex-1 text-center text-[9px] font-bold uppercase text-ink/50">
                   {weekdayShort(d).slice(0, 1)}
                 </span>
               ))}
             </div>
           </section>
 
-          <div className="divider my-7" />
-
           {/* Headline stats */}
-          <section className="flex items-start justify-between">
+          <section className="mt-4 grid grid-cols-3 gap-2">
             <Stat label="Avg / day" value={`${avgCal}`} />
             <Stat label="Days logged" value={`${loggedDays.length}`} accent />
             <Stat label="Streak" value={`${streak}`} />
           </section>
 
-          <div className="divider my-7" />
-
           {(bestDay || toughDay) && (
-            <>
-              <div className="divider my-7" />
-              <section className="flex flex-col gap-1.5">
-                {bestDay && (
-                  <p className="text-[13px] text-muted-foreground">
-                    Closest to goal: <span className="font-medium text-foreground">{weekdayShort(bestDay.d)}</span>{' '}
-                    <span className="num">({bestDay.cal} kcal)</span>
-                  </p>
-                )}
-                {toughDay && (
-                  <p className="text-[13px] text-muted-foreground">
-                    Furthest from goal: <span className="font-medium text-foreground">{weekdayShort(toughDay.d)}</span>{' '}
-                    <span className="num">({toughDay.cal} kcal)</span>
-                  </p>
-                )}
-              </section>
-            </>
+            <section className="mt-4 flex flex-col gap-1.5 rounded-2xl border-2 border-ink bg-white px-4 py-3">
+              {bestDay && (
+                <p className="text-[12px] text-ink/65">
+                  Closest to goal: <span className="font-bold text-foreground">{weekdayShort(bestDay.d)}</span>{' '}
+                  <span className="num font-semibold">({bestDay.cal} kcal)</span>
+                </p>
+              )}
+              {toughDay && (
+                <p className="text-[12px] text-ink/65">
+                  Furthest from goal: <span className="font-bold text-foreground">{weekdayShort(toughDay.d)}</span>{' '}
+                  <span className="num font-semibold">({toughDay.cal} kcal)</span>
+                </p>
+              )}
+            </section>
           )}
 
-          <div className="divider my-7" />
-
           {/* Avg macros */}
-          <section>
-            <span className="eyebrow">Average macros / day</span>
-            <div className="mt-4 flex flex-col gap-3">
-              <MacroRow label="Protein" value={avgP} goal={goals.protein} />
-              <MacroRow label="Carbs" value={avgC} goal={goals.carbs} />
-              <MacroRow label="Fat" value={avgF} goal={goals.fat} />
-              <MacroRow label="Fiber" value={avgFib} goal={goals.fiber} />
+          <section className="chunk mt-4 p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Average macros / day</span>
+            <div className="mt-3 flex flex-col gap-3">
+              <MacroRow label="Protein" value={avgP} goal={goals.protein} color="var(--color-tomato)" />
+              <MacroRow label="Carbs" value={avgC} goal={goals.carbs} color="var(--color-mustard)" />
+              <MacroRow label="Fat" value={avgF} goal={goals.fat} color="var(--color-pickle)" />
+              <MacroRow label="Fiber" value={avgFib} goal={goals.fiber} color="var(--color-peach)" />
             </div>
           </section>
 
           {split && (
-            <>
-              <div className="divider my-7" />
-              <section>
-                <span className="eyebrow">Where calories come from</span>
-                <div className="mt-4 flex items-center gap-6">
-                  <Donut p={split.p} c={split.c} f={split.f} />
-                  <div className="flex flex-col gap-2 text-[13px]">
-                    <SplitRow color="var(--color-primary)" label="Protein" pct={split.p} goal={split.gp} />
-                    <SplitRow color="var(--color-warning)" label="Carbs" pct={split.c} goal={split.gc} />
-                    <SplitRow color="var(--color-accent)" label="Fat" pct={split.f} goal={split.gf} />
-                  </div>
+            <section className="chunk mt-4 p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Where calories come from</span>
+              <div className="mt-3 flex items-center gap-6">
+                <Donut p={split.p} c={split.c} f={split.f} />
+                <div className="flex flex-col gap-2 text-[13px]">
+                  <SplitRow color="var(--color-tomato)" label="Protein" pct={split.p} goal={split.gp} />
+                  <SplitRow color="var(--color-mustard)" label="Carbs" pct={split.c} goal={split.gc} />
+                  <SplitRow color="var(--color-peach)" label="Fat" pct={split.f} goal={split.gf} />
                 </div>
-              </section>
-            </>
+              </div>
+            </section>
           )}
 
           {/* Most eaten */}
           {topFoods.length > 0 && (
-            <>
-              <div className="divider my-7" />
-              <section>
-                <span className="eyebrow">Most eaten this week</span>
-                <ul className="mt-4 flex flex-col gap-2.5">
-                  {topFoods.map(([name, count]) => (
-                    <li key={name} className="flex items-center justify-between text-[13px] text-foreground">
-                      <span>{name}</span>
-                      <span className="num text-muted-foreground">×{count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </>
+            <section className="chunk mt-4 p-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Most eaten this week</span>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {topFoods.map(([name, count]) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full border-2 border-ink bg-cream px-2.5 py-1 text-[11px] font-bold text-foreground"
+                  >
+                    {name} <span className="num text-ink/55">×{count}</span>
+                  </span>
+                ))}
+              </div>
+            </section>
           )}
           {showWeightChart && (
-            <>
-              <div className="divider my-7" />
-              <section>
-                <div className="flex items-baseline justify-between">
-                  <span className="eyebrow">Weight vs intake</span>
-                  <span className="text-[10px] text-muted-foreground">bars kcal/day · line kg</span>
-                </div>
-                <div className="mt-3">
-                  <WeightCaloriesChart data={weekPoints} />
-                </div>
-              </section>
-            </>
+            <section className="chunk mt-4 p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Weight vs intake</span>
+                <span className="text-[10px] text-muted-foreground">bars kcal/day · line kg</span>
+              </div>
+              <div className="mt-3">
+                <WeightCaloriesChart data={weekPoints} />
+              </div>
+            </section>
           )}
         </>
       )}
 
-      <div className="divider my-7" />
-
       {/* Monthly calendar — red over goal, green near goal, yellow well under */}
-      <section>
+      <section className="chunk mt-4 p-4">
         <div className="flex items-center justify-between">
-          <span className="eyebrow">By month</span>
-          <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">By month</span>
+          <div className="flex items-center gap-2">
             <Link
               href={prevMonthHref}
               aria-label="Previous month"
-              className="text-muted-foreground transition-opacity hover:opacity-70"
+              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-white transition-transform active:translate-x-px active:translate-y-px"
             >
-              <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+              <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.4} />
             </Link>
-            <span className="text-[13px] font-medium text-foreground">{monthLabel}</span>
+            <span className="text-[12px] font-bold text-foreground">{monthLabel}</span>
             {nextMonthHref ? (
               <Link
                 href={nextMonthHref}
                 aria-label="Next month"
-                className="text-muted-foreground transition-opacity hover:opacity-70"
+                className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink bg-white transition-transform active:translate-x-px active:translate-y-px"
               >
-                <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
               </Link>
             ) : (
-              <ChevronRight className="h-4 w-4 text-border" strokeWidth={1.5} />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-ink/20 text-ink/30">
+                <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.4} />
+              </span>
             )}
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-7 gap-y-1">
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((w, i) => (
-            <span key={`h${i}`} className="text-center text-[9px] uppercase tracking-[0.16em] text-muted-foreground">
+            <span key={`h${i}`} className="text-center text-[9px] font-bold uppercase text-ink/50">
               {w}
             </span>
           ))}
@@ -417,10 +403,10 @@ export default async function AnalyticsPage({
                 className="flex h-10 items-center justify-center transition-opacity active:opacity-60"
               >
                 <span
-                  className="num flex h-8 w-8 items-center justify-center rounded-full text-[11px]"
+                  className={`num flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-bold ${color ? 'border-2 border-ink' : ''}`}
                   style={
                     color
-                      ? { backgroundColor: color, color: 'var(--color-primary-foreground)', fontWeight: 500 }
+                      ? { backgroundColor: color, color: color === 'var(--color-warning)' ? 'var(--color-ink)' : '#fff' }
                       : { color: 'var(--color-muted-foreground)' }
                   }
                 >
@@ -490,25 +476,25 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="flex flex-col">
-      <span className={`num text-[22px] font-medium leading-none ${accent ? 'text-primary' : 'text-foreground'}`}>
+    <div className="rounded-xl border-2 border-ink bg-white p-2.5 text-center">
+      <span className={`num font-display block text-[20px] font-black leading-none ${accent ? 'text-tomato' : 'text-foreground'}`}>
         {value}
       </span>
-      <span className="eyebrow mt-2">{label}</span>
+      <span className="mt-1 block text-[9px] font-bold uppercase tracking-wide text-ink/55">{label}</span>
     </div>
   )
 }
 
-function MacroRow({ label, value, goal }: { label: string; value: number; goal: number }) {
+function MacroRow({ label, value, goal, color }: { label: string; value: number; goal: number; color: string }) {
   const pct = Math.min(100, Math.round((value / goal) * 100)) || 0
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between text-[13px]">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="num text-foreground">{value} <span className="text-muted-foreground">/ {goal} g</span></span>
+      <div className="mb-1.5 flex items-center justify-between text-[12px]">
+        <span className="font-bold text-ink/70">{label}</span>
+        <span className="num font-semibold text-foreground">{value} <span className="font-normal text-muted-foreground">/ {goal} g</span></span>
       </div>
-      <div className="h-px w-full bg-muted">
-        <div className="h-full bg-foreground/30" style={{ width: `${pct}%` }} />
+      <div className="h-2 w-full overflow-hidden rounded-full border-[1.5px] border-ink bg-white">
+        <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
     </div>
   )

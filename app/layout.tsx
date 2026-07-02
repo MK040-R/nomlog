@@ -1,20 +1,28 @@
 import type { Metadata, Viewport } from 'next'
-import { Fraunces, Inter } from 'next/font/google'
+import { Fraunces, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-// Display serif — numbers, headings, brand wordmark
+// Display serif — bold headings + brand wordmark (Black for the playful look)
 const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '700', '900'],
   variable: '--font-display',
   display: 'swap',
 })
 
 // Body / labels / controls
-const inter = Inter({
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '700'],
   variable: '--font-sans',
+  display: 'swap',
+})
+
+// Numbers — tabular mono
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '600'],
+  variable: '--font-mono',
   display: 'swap',
 })
 
@@ -29,7 +37,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // Extend under the iPhone status bar / home indicator so safe-area insets work
   viewportFit: 'cover',
-  themeColor: '#FBF4EA',
+  themeColor: '#F8F1E2',
 }
 
 export default function RootLayout({
@@ -38,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <body>{children}</body>
     </html>
   )

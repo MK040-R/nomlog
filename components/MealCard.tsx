@@ -181,10 +181,10 @@ export function MealCard({ meal, date, todayYmd, favorited, grouped }: Props) {
 
   if (deleted) {
     return (
-      <div className="flex items-center justify-between py-1">
-        <span className="text-[13px] text-muted-foreground">Meal deleted.</span>
-        <button onClick={undoDelete} className="text-[13px] font-medium text-primary transition-opacity hover:opacity-70">
-          Undo
+      <div className="flex items-center justify-between rounded-2xl border-[3px] border-ink bg-ink px-4 py-3 text-white shadow-[4px_4px_0_0_var(--color-tomato)]">
+        <span className="text-[12px] font-semibold">Meal deleted</span>
+        <button onClick={undoDelete} className="text-[11px] font-bold text-mustard transition-opacity hover:opacity-80">
+          UNDO
         </button>
       </div>
     )
@@ -193,7 +193,7 @@ export function MealCard({ meal, date, todayYmd, favorited, grouped }: Props) {
   // ---- Edit mode ----
   if (editing) {
     return (
-      <div>
+      <div className="chunk animate-pop p-4">
         <div className="flex items-center justify-between gap-3">
           <select
             value={mealType}
@@ -308,53 +308,56 @@ export function MealCard({ meal, date, todayYmd, favorited, grouped }: Props) {
 
   // ---- View mode ----
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
+    <div className="rounded-2xl border-2 border-ink bg-white px-3 py-2.5">
+      <div className="mb-1.5 flex items-center justify-between">
         {grouped ? (
-          <span className="num text-[12px] text-muted-foreground">{meal.total_calories} kcal</span>
+          <span className="num text-[12px] font-bold text-foreground">{meal.total_calories} kcal</span>
         ) : (
-          <span className="flex items-center gap-2 text-[13px] font-medium capitalize text-foreground">
-            <span>{MEAL_EMOJI[meal.meal_type]}</span> {meal.meal_type}
+          <span className="flex items-center gap-2 text-[13px] font-bold capitalize text-foreground">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl border-2 border-ink bg-cream text-base">
+              {MEAL_EMOJI[meal.meal_type]}
+            </span>
+            {meal.meal_type}
           </span>
         )}
-        <div className="flex items-center gap-3">
-          {!grouped && <span className="num text-[13px] text-foreground">{meal.total_calories} kcal</span>}
+        <div className="flex items-center gap-2.5">
+          {!grouped && <span className="num text-[13px] font-bold text-foreground">{meal.total_calories} kcal</span>}
           <button
             onClick={toggleFavorite}
             disabled={busy}
-            className="transition-opacity hover:opacity-70"
+            className="transition-transform active:scale-90"
             aria-label={isFav ? 'Remove from favorites' : 'Save as favorite'}
           >
             <Star
-              className="h-3.5 w-3.5"
-              strokeWidth={1.5}
-              style={{ color: isFav ? 'var(--color-primary)' : 'var(--color-muted-foreground)' }}
-              fill={isFav ? 'var(--color-primary)' : 'none'}
+              className="h-4 w-4"
+              strokeWidth={2.2}
+              style={{ color: isFav ? 'var(--color-mustard)' : 'var(--color-muted-foreground)' }}
+              fill={isFav ? 'var(--color-mustard)' : 'none'}
             />
           </button>
           <button
             onClick={startEdit}
             disabled={busy}
-            className="text-muted-foreground transition-opacity hover:opacity-70"
+            className="text-ink/60 transition-transform active:scale-90"
             aria-label="Edit meal"
           >
-            <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Pencil className="h-4 w-4" strokeWidth={2.2} />
           </button>
           <button
             onClick={remove}
             disabled={busy}
-            className="text-muted-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
+            className="text-ink/60 transition-transform active:scale-90 disabled:opacity-40"
             aria-label="Delete meal"
           >
-            <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <X className="h-4 w-4" strokeWidth={2.2} />
           </button>
         </div>
       </div>
       <ul className="flex flex-col gap-0.5">
         {(meal.food_items ?? []).map((f, i) => (
-          <li key={i} className="flex justify-between text-[13px] text-muted-foreground">
-            <span>{f.name} · {f.portion}</span>
-            <span className="num">{Math.round(f.calories_kcal)}</span>
+          <li key={i} className="flex justify-between text-[12px] text-ink/60">
+            <span className="truncate">{f.name} · {f.portion}</span>
+            <span className="num ml-2 shrink-0 font-semibold">{Math.round(f.calories_kcal)}</span>
           </li>
         ))}
       </ul>

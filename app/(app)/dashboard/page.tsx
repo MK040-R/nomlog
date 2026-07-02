@@ -2,7 +2,9 @@ import { verifySession } from '@/lib/dal'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, Flame, MessageCircleQuestion } from 'lucide-react'
+import { CalorieRing } from '@/components/CalorieRing'
 import { LogMeal } from '@/components/LogMeal'
 import { MealCard } from '@/components/MealCard'
 import { DailyTip } from '@/components/DailyTip'
@@ -10,7 +12,7 @@ import { WhatFits } from '@/components/WhatFits'
 import { WaterTracker } from '@/components/WaterTracker'
 import { QuickRelog, type RelogOption, type YesterdayMeal } from '@/components/QuickRelog'
 import { MacroPanel } from '@/components/MacroPanel'
-import { dayRange, todayYmd, hourNow, shiftYmd, ymdOf, mealSig, mealLabel, DEFAULT_GOALS } from '@/lib/nutrition'
+import { dayRange, todayYmd, hourNow, shiftYmd, ymdOf, mealSig, mealLabel, goalsFor } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 import type { FoodItem, MealType } from '@/types/app.types'
 
@@ -35,6 +37,7 @@ export default async function DashboardPage({
       supabase
         .from('meal_logs')
         .select('*')
+        .eq('user_id', user.id)
         .gte('logged_at', startIso)
         .lt('logged_at', endIso)
         .order('logged_at', { ascending: true }),
@@ -43,23 +46,18 @@ export default async function DashboardPage({
       supabase
         .from('meal_logs')
         .select('food_items, total_calories, meal_type, logged_at')
+        .eq('user_id', user.id)
         .gte('logged_at', dayRange(tz, shiftYmd(today, -14)).startIso)
         .order('logged_at', { ascending: false })
         .limit(80),
-      supabase.from('favorite_meals').select('sig, label, items').order('created_at', { ascending: false }),
-      supabase.from('water_logs').select('glasses').eq('logged_on', ymd).maybeSingle(),
+      supabase.from('favorite_meals').select('sig, label, items').eq('user_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('water_logs').select('glasses').eq('user_id', user.id).eq('logged_on', ymd).maybeSingle(),
       // distinct logged days for the streak counter
-      supabase.from('meal_logs').select('logged_at').order('logged_at', { ascending: false }).limit(400),
+      supabase.from('meal_logs').select('logged_at').eq('user_id', user.id).order('logged_at', { ascending: false }).limit(400),
     ])
 
   const rows = meals ?? []
-  const goals = {
-    calories: profile?.goal_calories ?? DEFAULT_GOALS.goal_calories,
-    protein: profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g,
-    carbs: profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g,
-    fat: profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g,
-    fiber: profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g,
-  }
+  const goals = goalsFor(profile)
 
   const consumed = rows.reduce(
     (a, m) => ({
@@ -176,31 +174,41 @@ export default async function DashboardPage({
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
       {/* Top bar */}
       <div className="flex items-center justify-between">
-        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
-        <div className="flex items-center gap-3">
-          <Link href={prevHref} aria-label="Previous day" className="text-muted-foreground transition-opacity hover:opacity-70">
-            <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+        <span className="font-display text-[17px] font-black lowercase tracking-tight text-foreground">nomlog</span>
+        <div className="flex items-center gap-2">
+          <Link
+            href={prevHref}
+            aria-label="Previous day"
+            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white transition-transform active:translate-x-px active:translate-y-px"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.4} />
           </Link>
-          <span className="eyebrow">{isToday ? 'Today' : dateLabel}</span>
+          <span className="text-[12px] font-bold text-foreground">{isToday ? 'Today' : dateLabel}</span>
           {nextHref ? (
-            <Link href={nextHref} aria-label="Next day" className="text-muted-foreground transition-opacity hover:opacity-70">
-              <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+            <Link
+              href={nextHref}
+              aria-label="Next day"
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink bg-white transition-transform active:translate-x-px active:translate-y-px"
+            >
+              <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
             </Link>
           ) : (
-            <ChevronRight className="h-4 w-4 text-border" strokeWidth={1.5} />
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ink/20 bg-white text-ink/30">
+              <ChevronRight className="h-4 w-4" strokeWidth={2.4} />
+            </span>
           )}
         </div>
       </div>
 
       {/* Greeting */}
-      <div className="mt-8 flex items-start justify-between gap-3">
-        <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">
-          {isToday ? `${greeting(hour)}, ${displayName}` : 'Looking back'}
+      <div className="mt-7 flex items-start justify-between gap-3">
+        <h1 className="font-display text-[26px] font-black leading-tight tracking-tight text-foreground">
+          {isToday ? `${greeting(hour)}, ${displayName}.` : 'Looking back'}
         </h1>
         {isToday && streak >= 2 && (
-          <span className="flex shrink-0 items-center gap-1 pt-1 text-[12px] text-muted-foreground">
-            <Flame className="h-3.5 w-3.5" strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
-            <span className="num">{streak} days</span>
+          <span className="sticker !bg-mustard shrink-0">
+            <Flame className="h-3 w-3" strokeWidth={2.6} />
+            <span className="num">{streak}-day streak</span>
           </span>
         )}
       </div>
@@ -214,40 +222,27 @@ export default async function DashboardPage({
         </Link>
       )}
 
-      <div className="divider my-7" />
-
-      {/* Calories */}
-      <section>
-        <span className="eyebrow">Calories</span>
-        <div className="mt-3 flex items-end justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="num text-[38px] font-medium leading-none text-foreground">{consumed.calories}</span>
-            <span className="text-[13px] text-muted-foreground">/ {goals.calories} kcal</span>
+      {/* Calories — signature ring */}
+      <section className="mt-6 flex flex-col items-center">
+        <CalorieRing
+          pct={pct}
+          value={consumed.calories.toLocaleString('en-IN')}
+          label={over ? `${Math.abs(remaining).toLocaleString('en-IN')} over goal` : `of ${goals.calories.toLocaleString('en-IN')} kcal`}
+          over={over}
+        />
+        {dayDone && !over && (
+          <p className="mt-2 text-[12px] text-muted-foreground">Nicely done today.</p>
+        )}
+        {over && isToday && (
+          <div className="chunk mt-4 w-full !bg-tomato p-3 text-white">
+            <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">Over by {Math.abs(remaining)} kcal</div>
+            <div className="mt-0.5 text-[13px] font-bold">It&apos;s one day. Tomorrow&apos;s a fresh plate. 🍐</div>
           </div>
-          <span
-            className="num text-[13px]"
-            style={{ color: over ? 'var(--color-destructive)' : 'var(--color-success)' }}
-          >
-            {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
-          </span>
-        </div>
-        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${pct}%`, backgroundColor: over ? 'var(--color-destructive)' : 'var(--color-primary)' }}
-          />
-        </div>
-        {dayDone && (
-          <p className="mt-3 text-[13px] text-muted-foreground">
-            That&apos;s {consumed.calories} of {goals.calories} kcal today{over ? '.' : ' — nicely done.'}
-          </p>
         )}
       </section>
 
-      <div className="divider my-7" />
-
       {/* Macros — tappable: shows which foods contributed */}
-      <section>
+      <section className="mt-6">
         <MacroPanel
           consumed={{ protein: consumed.protein, carbs: consumed.carbs, fat: consumed.fat, fiber: consumed.fiber }}
           goals={{ protein: goals.protein, carbs: goals.carbs, fat: goals.fat, fiber: goals.fiber }}
@@ -255,20 +250,19 @@ export default async function DashboardPage({
         />
       </section>
 
-      <div className="divider my-7" />
-
       {/* Water */}
-      <section>
-        <span className="eyebrow">Water</span>
-        <div className="mt-3">
+      <section className="mt-6">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Water</span>
+        <div className="mt-2">
           <WaterTracker initial={water?.glasses ?? 0} date={ymd} />
         </div>
       </section>
 
-      <div className="divider my-7" />
-      <section>
-        <span className="eyebrow">{isToday ? 'Log a meal' : `Log a meal for ${dateLabel}`}</span>
-        <div className="mt-4">
+      <section className="mt-6">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">
+          {isToday ? 'Log a meal' : `Log a meal for ${dateLabel}`}
+        </span>
+        <div className="mt-3">
           <LogMeal date={isToday ? undefined : ymd} recentItems={recentItems} />
         </div>
         {isToday && (
@@ -283,32 +277,38 @@ export default async function DashboardPage({
         )}
       </section>
 
-      <div className="divider my-7" />
-
       {/* Meals */}
-      <section>
-        <span className="eyebrow">{isToday ? "Today's meals" : 'Meals'}</span>
+      <section className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">
+            {isToday ? "Today's meals" : 'Meals'}
+          </span>
+          <span className="text-[10px] text-ink/40">{rows.length} logged</span>
+        </div>
         {rows.length === 0 ? (
-          <p className="mt-4 text-[13px] text-muted-foreground">
-            {isToday ? 'Nothing logged yet. Tell me what you ate above.' : 'Nothing was logged this day.'}
-          </p>
+          <div className="rounded-2xl border-[3px] border-dashed border-ink/40 p-5 text-center">
+            <Image src="/brand/pear-sleeping.png" alt="" width={80} height={80} className="mx-auto h-20 w-20 object-contain opacity-90" />
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              {isToday ? 'Nothing logged yet. Tell me what you ate above.' : 'Nothing was logged this day.'}
+            </p>
+          </div>
         ) : (
-          <div className="mt-4 flex flex-col">
+          <div className="flex flex-col">
             {mealGroups.map((g, gi) => (
-              <div key={g.type} className={gi > 0 ? 'mt-5 border-t border-border/60 pt-5' : ''}>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+              <div key={g.type} className={gi > 0 ? 'mt-5' : ''}>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-[13px] font-bold text-foreground">
                     <span>{g.emoji}</span> {g.label}
                   </span>
-                  <span className="num text-[13px] font-medium text-foreground">
+                  <span className="num text-[13px] font-bold text-foreground">
                     {g.entries.reduce((a, m) => a + m.total_calories, 0)} kcal
                   </span>
                 </div>
-                <div className="flex flex-col">
-                  {g.entries.map((m, idx) => {
+                <div className="flex flex-col gap-2">
+                  {g.entries.map((m) => {
                     const items = (m.food_items as unknown as FoodItem[]) ?? []
                     return (
-                      <div key={m.id} className={idx > 0 ? 'mt-3 border-t border-border/30 pt-3' : ''}>
+                      <div key={m.id}>
                         <MealCard
                           meal={{
                             id: m.id,

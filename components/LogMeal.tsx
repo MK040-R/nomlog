@@ -201,25 +201,27 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
   // ---- Confirming / saving ----
   if (status === 'confirming' || status === 'saving') {
     return (
-      <div ref={panelRef}>
+      <div ref={panelRef} className="chunk animate-pop p-4">
         <div className="flex items-center justify-between">
           <select
             value={mealType}
             onChange={(e) => setMealType(e.target.value as MealType)}
-            className="field w-auto pr-6 text-[13px] font-medium capitalize"
+            className="w-auto rounded-full border-2 border-ink bg-white px-3 py-1 pr-6 text-[13px] font-bold capitalize outline-none"
           >
             {MEAL_TYPES.map((m) => (
               <option key={m} value={m} className="capitalize">{m}</option>
             ))}
           </select>
           {confidence !== 'high' && (
-            <span className="text-[11px] text-muted-foreground">Rough — tap a number to fix it</span>
+            <span className="rounded-full border-2 border-ink bg-mustard px-2 py-0.5 text-[10px] font-bold text-ink">
+              Rough — tap to fix
+            </span>
           )}
         </div>
 
-        <div className="mt-4 flex flex-col">
+        <div className="mt-4 flex flex-col gap-3">
           {items.map((it, i) => (
-            <div key={i} className={i > 0 ? 'border-t border-border/60 pt-3 mt-3' : ''}>
+            <div key={i} className="rounded-2xl border-2 border-ink bg-cream/60 p-3">
               <div className="mb-2 flex items-center gap-2">
                 <input
                   value={it.name}
@@ -238,13 +240,13 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
                 />
                 <button
                   onClick={() => scaleItem(i, 0.5)}
-                  className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground transition-opacity hover:opacity-70"
+                  className="rounded-full border-2 border-ink bg-white px-2 py-0.5 text-[10px] font-bold text-ink transition-transform active:translate-x-px active:translate-y-px"
                 >
                   ×½
                 </button>
                 <button
                   onClick={() => scaleItem(i, 2)}
-                  className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground transition-opacity hover:opacity-70"
+                  className="rounded-full border-2 border-ink bg-white px-2 py-0.5 text-[10px] font-bold text-ink transition-transform active:translate-x-px active:translate-y-px"
                 >
                   ×2
                 </button>
@@ -321,14 +323,14 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
               <button
                 key={i}
                 onClick={() => addItem(r)}
-                className="rounded-full border border-border px-3 py-1.5 text-[12px] text-foreground transition-opacity hover:opacity-70"
+                className="rounded-full border-2 border-ink bg-white px-3 py-1.5 text-[12px] font-bold text-foreground transition-transform active:translate-x-px active:translate-y-px"
               >
-                {r.name} <span className="num text-muted-foreground">· {Math.round(r.calories_kcal)}</span>
+                {r.name} <span className="num font-semibold text-muted-foreground">· {Math.round(r.calories_kcal)}</span>
               </button>
             ))}
             <button
               onClick={() => addItem(BLANK)}
-              className="rounded-full border border-dashed border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-opacity hover:opacity-70"
+              className="rounded-full border-2 border-dashed border-ink/50 px-3 py-1.5 text-[12px] font-bold text-ink/60 transition-transform active:translate-x-px active:translate-y-px"
             >
               blank item
             </button>
@@ -336,8 +338,8 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
         )}
 
         <div className="mt-5 flex items-baseline justify-between">
-          <span className="eyebrow">Total</span>
-          <span className="num text-[22px] font-medium text-foreground">{Math.round(totals.kcal)} kcal</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Total</span>
+          <span className="num font-display text-[22px] font-black text-foreground">{Math.round(totals.kcal)} kcal</span>
         </div>
         <p className="num mt-1 text-right text-[11px] text-muted-foreground">
           P {totals.p.toFixed(0)} · C {totals.c.toFixed(0)} · F {totals.f.toFixed(0)} · Fi {totals.fib.toFixed(0)}
@@ -359,7 +361,7 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
 
   // ---- Idle / parsing ----
   return (
-    <div className="rounded-3xl border border-border bg-card p-4 shadow-[0_2px_16px_rgba(120,80,60,0.06)]">
+    <div className="chunk p-4">
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -383,12 +385,12 @@ export function LogMeal({ date, recentItems = [] }: { date?: string; recentItems
         <button
           onClick={() => (voice.listening ? voice.stop() : voice.start())}
           disabled={status === 'parsing'}
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border transition-opacity hover:opacity-70 ${
-            voice.listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-[3px] border-ink shadow-[3px_3px_0_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px ${
+            voice.listening ? 'animate-pulse-ring bg-tomato text-white' : 'bg-white text-foreground'
           }`}
           aria-label={voice.listening ? 'Stop listening' : 'Speak your meal'}
         >
-          {voice.listening ? <Square className="h-4 w-4" strokeWidth={2} /> : <Mic className="h-5 w-5" strokeWidth={1.5} />}
+          {voice.listening ? <Square className="h-4 w-4" strokeWidth={2.4} /> : <Mic className="h-5 w-5" strokeWidth={2.4} />}
         </button>
         <button
           onClick={() => parse(text)}

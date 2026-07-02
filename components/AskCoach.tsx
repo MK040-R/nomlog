@@ -57,7 +57,7 @@ export function AskCoach({ initialQuestion }: { initialQuestion?: string }) {
   return (
     <div>
       {/* Input */}
-      <div className="rounded-3xl border border-border bg-card p-4 shadow-[0_2px_16px_rgba(120,80,60,0.06)]">
+      <div className="chunk p-4">
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
@@ -77,17 +77,17 @@ export function AskCoach({ initialQuestion }: { initialQuestion?: string }) {
             onClick={() => (voice.listening ? voice.stop() : voice.start())}
             disabled={pending !== null}
             aria-label={voice.listening ? 'Stop listening' : 'Speak your question'}
-            className={`flex h-9 w-9 items-center justify-center rounded-full border transition-opacity hover:opacity-70 disabled:opacity-40 ${
-              voice.listening ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-foreground'
+            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40 ${
+              voice.listening ? 'animate-pulse-ring bg-tomato text-white' : 'bg-white text-foreground'
             }`}
           >
-            {voice.listening ? <Square className="h-3.5 w-3.5" strokeWidth={2} /> : <Mic className="h-4 w-4" strokeWidth={1.5} />}
+            {voice.listening ? <Square className="h-3.5 w-3.5" strokeWidth={2.4} /> : <Mic className="h-4 w-4" strokeWidth={2.4} />}
           </button>
           <button
             onClick={() => ask(question)}
             disabled={pending !== null || !question.trim() || voice.listening}
             aria-label="Ask"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-ink bg-tomato text-white shadow-[2px_2px_0_0_var(--color-ink)] transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
           >
             <ArrowUp className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -101,7 +101,7 @@ export function AskCoach({ initialQuestion }: { initialQuestion?: string }) {
             key={c}
             onClick={() => ask(c)}
             disabled={pending !== null}
-            className="rounded-full border border-border px-3 py-1.5 text-[12px] text-muted-foreground transition-opacity hover:opacity-70 disabled:opacity-40"
+            className="rounded-full border-2 border-ink bg-mustard px-2.5 py-1 text-[11px] font-bold text-ink transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
           >
             {c}
           </button>
@@ -173,7 +173,7 @@ function AnswerCard({
   }
 
   return (
-    <div className={`rounded-3xl border border-border bg-card p-5 ${faded ? 'opacity-70' : ''}`}>
+    <div className={`animate-pop rounded-2xl border-2 border-ink bg-white p-4 ${faded ? 'opacity-70' : ''}`}>
       <p className="flex items-start gap-1.5 text-[12px] font-medium text-muted-foreground">
         <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-primary" strokeWidth={1.5} />
         {q}
@@ -198,7 +198,7 @@ function AnswerCard({
                     <button
                       onClick={() => logSuggestion(s, i)}
                       disabled={loggingIdx !== null}
-                      className="h-7 shrink-0 rounded-full border border-border px-3 text-[11px] font-medium text-primary transition-opacity hover:opacity-70 disabled:opacity-40"
+                      className="sticker h-7 shrink-0 !text-[11px] transition-transform active:translate-x-px active:translate-y-px disabled:opacity-40"
                     >
                       {loggingIdx === i ? '…' : 'Log'}
                     </button>

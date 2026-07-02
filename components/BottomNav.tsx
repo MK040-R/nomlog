@@ -16,21 +16,21 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-10 border-t border-border/60 bg-background/95 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-10 border-t-2 border-ink bg-background"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="mx-auto flex max-w-[420px] items-stretch justify-around pt-1">
+      <div className="mx-auto flex max-w-[420px] items-stretch justify-around pt-1.5">
         {TABS.map(({ href, label, Icon }) => {
           const active = pathname === href
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] uppercase tracking-[0.16em] transition-opacity hover:opacity-70 ${
-                active ? 'text-primary' : 'text-muted-foreground'
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[9px] font-semibold uppercase tracking-wide transition-opacity hover:opacity-70 ${
+                active ? 'text-tomato' : 'text-ink/55'
               }`}
             >
-              <Icon className="h-4 w-4" strokeWidth={active ? 2.4 : 1.6} />
+              <Icon className="h-5 w-5" strokeWidth={2.4} />
               {label}
             </Link>
           )

@@ -4,12 +4,12 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { DailyTargets } from '@/components/DailyTargets'
 import { LogWeightSheet } from '@/components/LogWeightSheet'
-import { WeightChart } from '@/components/WeightChart'
+import { WeightChart } from '@/components/LazyCharts'
 import { AccountActions } from '@/components/AccountActions'
 import { WeightHistory } from '@/components/WeightHistory'
 import { Download } from 'lucide-react'
 import { computeStats, weeklyWeightSeries, bmiInfo } from '@/lib/stats'
-import { DEFAULT_GOALS } from '@/lib/nutrition'
+import { goalsFor } from '@/lib/nutrition'
 import { getUserTz } from '@/lib/tz-server'
 
 export default async function ProfilePage() {
@@ -19,12 +19,25 @@ export default async function ProfilePage() {
   const supabase = await createClient()
   const [{ data: profile }, { data: meals }, { data: weights }] = await Promise.all([
     supabase.from('user_profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('meal_logs').select('logged_at, total_calories'),
-    supabase.from('weight_logs').select('logged_on, weight_kg').order('logged_on', { ascending: true }),
+    supabase
+      .from('meal_logs')
+      .select('logged_at, total_calories')
+      .eq('user_id', user.id)
+      .order('logged_at', { ascending: false })
+      .limit(2000),
+    // Newest-first with a cap so a long history can't blow up the page,
+    // then flipped back to the ascending order the charts expect.
+    supabase
+      .from('weight_logs')
+      .select('logged_on, weight_kg')
+      .eq('user_id', user.id)
+      .order('logged_on', { ascending: false })
+      .limit(1000),
   ])
+  weights?.reverse()
 
-  const goalCalories = profile?.goal_calories ?? DEFAULT_GOALS.goal_calories
-  const stats = computeStats(meals ?? [], goalCalories, await getUserTz())
+  const effectiveGoals = goalsFor(profile)
+  const stats = computeStats(meals ?? [], effectiveGoals.calories, await getUserTz())
 
   const weightRows = weights ?? []
   const series = weeklyWeightSeries(weightRows)
@@ -47,11 +60,11 @@ export default async function ProfilePage() {
 
   const str = (v: number | string | null | undefined) => (v === null || v === undefined ? '' : String(v))
   const targets = {
-    goal_calories: str(profile?.goal_calories ?? DEFAULT_GOALS.goal_calories),
-    goal_protein_g: str(profile?.goal_protein_g ?? DEFAULT_GOALS.goal_protein_g),
-    goal_carbs_g: str(profile?.goal_carbs_g ?? DEFAULT_GOALS.goal_carbs_g),
-    goal_fat_g: str(profile?.goal_fat_g ?? DEFAULT_GOALS.goal_fat_g),
-    goal_fiber_g: str(profile?.goal_fiber_g ?? DEFAULT_GOALS.goal_fiber_g),
+    goal_calories: str(effectiveGoals.calories),
+    goal_protein_g: str(effectiveGoals.protein),
+    goal_carbs_g: str(effectiveGoals.carbs),
+    goal_fat_g: str(effectiveGoals.fat),
+    goal_fiber_g: str(effectiveGoals.fiber),
   }
 
   async function saveTargets(formData: FormData) {
@@ -76,38 +89,33 @@ export default async function ProfilePage() {
   return (
     <main className="mx-auto w-full max-w-[420px] px-6 pb-20 pt-8">
       {/* Top bar */}
-      <div className="mb-10 flex items-center justify-between">
-        <span className="font-display text-sm font-medium lowercase tracking-tight text-foreground">nomlog</span>
-        <span className="eyebrow">Profile</span>
+      <div className="mb-8 flex items-center justify-between">
+        <span className="font-display text-[17px] font-black lowercase tracking-tight text-foreground">nomlog</span>
+        <span className="text-[12px] font-bold text-ink/60">You</span>
       </div>
 
       {/* Identity */}
       <section className="flex items-center gap-4">
-        <div className="relative">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft font-display text-lg text-primary">
-            {initial}
-          </div>
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-[var(--color-success)]" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-ink bg-mustard font-display text-[24px] font-black text-ink">
+          {initial}
         </div>
         <div>
-          <h1 className="font-display text-[22px] font-medium leading-tight text-foreground">{displayName}</h1>
-          <p className="text-[13px] text-muted-foreground">{user.email}</p>
+          <h1 className="font-display text-[22px] font-black leading-tight tracking-tight text-foreground">{displayName}</h1>
+          <p className="text-[12px] text-muted-foreground">{user.email}</p>
         </div>
       </section>
 
       {/* Stats */}
-      <section className="mt-8 flex items-start justify-between">
+      <section className="mt-6 grid grid-cols-3 gap-2">
         <Stat value={`${stats.daysLogged}`} label="Days" />
         <Stat value={`${stats.streak}`} label="Streak" accent />
         <Stat value={`${stats.onGoalPct}%`} label="On goal" />
       </section>
 
-      <div className="divider my-7" />
-
       {/* Body */}
-      <section>
+      <section className="chunk mt-6 p-4">
         <div className="flex items-center justify-between">
-          <span className="eyebrow">Body</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-ink/50">Body</span>
           <LogWeightSheet
             currentWeight={currentWeight}
             name={name}
@@ -117,12 +125,12 @@ export default async function ProfilePage() {
           />
         </div>
 
-        <div className="mt-4 flex items-end justify-between">
+        <div className="mt-3 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="num text-[38px] font-medium leading-none text-foreground">
+            <span className="num font-display text-[32px] font-black leading-none text-foreground">
               {currentWeight !== null ? currentWeight.toFixed(1) : '—'}
             </span>
-            <span className="text-[13px] text-muted-foreground">kg</span>
+            <span className="text-[13px] font-semibold text-muted-foreground">kg</span>
           </div>
           {delta && (
             <span
@@ -181,19 +189,17 @@ export default async function ProfilePage() {
         </div>
       </section>
 
-      <div className="divider my-7" />
-
       {/* Daily targets */}
-      <DailyTargets initial={targets} action={saveTargets} />
-
-      <div className="divider my-7" />
+      <div className="chunk mt-4 !bg-mustard p-4">
+        <DailyTargets initial={targets} action={saveTargets} />
+      </div>
 
       {/* Account */}
       <a
         href="/api/export"
-        className="flex items-center gap-3 py-2 text-[13px] text-foreground transition-opacity hover:opacity-70"
+        className="mt-4 flex w-full items-center gap-3 rounded-xl border-2 border-ink bg-white px-3 py-3 text-[12px] font-bold text-foreground transition-transform active:translate-x-px active:translate-y-px"
       >
-        <Download className="h-3.5 w-3.5 opacity-70" strokeWidth={1.5} /> Export my data (CSV)
+        <Download className="h-4 w-4" strokeWidth={2.2} /> Export my data (CSV)
       </a>
       <AccountActions />
 
@@ -206,11 +212,11 @@ export default async function ProfilePage() {
 
 function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
   return (
-    <div className="flex flex-col">
-      <span className={`num text-[22px] font-medium leading-none ${accent ? 'text-primary' : 'text-foreground'}`}>
+    <div className="rounded-xl border-2 border-ink bg-white p-2.5 text-center">
+      <span className={`num font-display block text-[20px] font-black leading-none ${accent ? 'text-tomato' : 'text-foreground'}`}>
         {value}
       </span>
-      <span className="eyebrow mt-2">{label}</span>
+      <span className="mt-1 block text-[9px] font-bold uppercase tracking-wide text-ink/55">{label}</span>
     </div>
   )
 }
