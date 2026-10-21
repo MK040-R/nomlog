@@ -1,42 +1,103 @@
 # NomLog
 
-Voice-first food logging. Next.js (App Router) + Supabase (Postgres, auth) + Gemini. Also serves as the backend for the native iOS app in `NomLog-iOS/`.
+Voice-first food logging. Just say what you ate — NomLog extracts the calories and macros, tracks your goals, and tells you how you're doing.
 
-## Running the app
+**Live app:** [nomlog-neon.vercel.app](https://nomlog-neon.vercel.app)
 
-### Testing the iOS app in the simulator (or just using the app): production mode
+---
+
+## Screenshots
+
+| Dashboard | Today's Meals |
+|---|---|
+| ![Dashboard](public/screenshots/1-dashboard.jpg) | ![Meals](public/screenshots/2-meals.jpg) |
+
+| Insights | Macro Breakdown |
+|---|---|
+| ![Insights](public/screenshots/3-insights.jpg) | ![Macros](public/screenshots/4-macros.jpg) |
+
+| Coach | Profile & Weight |
+|---|---|
+| ![Ask Coach](public/screenshots/5-ask.jpg) | ![Profile](public/screenshots/6-profile.jpg) |
+
+---
+
+## Features
+
+- **Voice logging** — describe a meal in plain words; Gemini extracts every item, portion, and macro
+- **Daily dashboard** — calorie ring, macro bars, water tracker, AI tip, and quick re-log from favourites
+- **Insights** — 7-day calorie bar chart, average macros vs goals, macro split donut, most-eaten foods, monthly calendar
+- **Coach tab** — ask anything about your log ("what can I eat now?", "how's my protein this week?")
+- **Profile** — weight trend chart, BMI, goal weight progress, daily targets, CSV export
+- **iOS app** — native companion app in `NomLog-iOS/` backed by this server
+
+---
+
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Frontend | Next.js 15 (App Router), Tailwind CSS |
+| Backend | Next.js API routes, Supabase Edge Functions |
+| Database | Supabase (Postgres) + Row-Level Security |
+| Auth | Supabase Auth — Google + Apple sign-in |
+| AI | Google Gemini (meal parsing, tips, coach, recaps) |
+| iOS | Swift, hosted at `NomLog-iOS/` |
+| Deploy | Vercel (web) |
+
+---
+
+## Running locally
+
+### Production build (use for iOS simulator testing)
 
 ```bash
-rm -rf .next && npm run build && npm start
+npm run build && npm start
 ```
 
-This serves precompiled, optimized code at http://localhost:3000 — the simulator points there by default. **Always use this when testing the iOS app.** The dev server (below) compiles each route on first hit and can take minutes per screen, which makes the app feel broken.
+Serves at `http://localhost:3000`. The iOS simulator points here by default.
 
-### Editing web code: dev mode
+### Dev mode (use while editing web code)
 
 ```bash
 npm run dev
 ```
 
-Use only while actively changing web code (hot reload). If the dev server hangs and never binds, delete `.next` and retry.
+Hot reload. If it hangs, delete `.next` and retry.
+
+---
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` and fill in:
+Copy `.env.example` to `.env.local`:
 
 | Variable | What it is |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key (server-only; account deletion) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service-role key (server-only) |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `NEXT_PUBLIC_SITE_URL` | The app's public URL (auth redirects) |
 
+---
+
 ## Deploying to Vercel
 
-1. Push this repo to GitHub and import it at [vercel.com/new](https://vercel.com/new) (framework auto-detected as Next.js; no build settings needed).
-2. In the Vercel project settings → Environment Variables, add every variable from the table above. Set `NEXT_PUBLIC_SITE_URL` to the Vercel URL (e.g. `https://nomlog.vercel.app`).
-3. In the Supabase dashboard → Authentication → URL Configuration, add the Vercel URL to Site URL / Redirect URLs so Google sign-in redirects back correctly.
-4. Deploy. Then point the iOS app at production: change `apiBase` in `NomLog-iOS/NomLog/App/SupabaseConfig.swift` from `http://localhost:3000` to the Vercel URL and rebuild the app.
+1. Push to GitHub and import at [vercel.com/new](https://vercel.com/new) (Next.js auto-detected).
+2. Add all env vars above in Vercel project settings. Set `NEXT_PUBLIC_SITE_URL` to your Vercel URL.
+3. In Supabase → Authentication → URL Configuration, add the Vercel URL to redirect URLs.
+4. Deploy. For the iOS app, update `apiBase` in `NomLog-iOS/NomLog/App/SupabaseConfig.swift` to the Vercel URL.
 
-Note: the Gemini free tier allows ~20 requests/day/model — tips and recaps are cached server-side (one per day/week per user) to stay under it.
+> Gemini free tier: ~20 requests/day/model. Tips and recaps are cached server-side (one per day/week per user) to stay under the limit.
+
+---
+
+## Demo seed
+
+To populate a Supabase user with 30 days of realistic demo data:
+
+```bash
+SEED_EMAIL=your@email.com node scripts/seed-demo.mjs
+```
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`. Seeds 30 days of meals, weight trend, water, daily tips, weekly recaps, and favourite meals for the given user.
