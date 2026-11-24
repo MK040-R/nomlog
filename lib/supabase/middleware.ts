@@ -6,6 +6,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 // only place a refreshed token can be persisted back to the browser.
 const REFRESH_MARGIN_S = 5 * 60
 
+const PUBLIC_PATHS = ['/privacy', '/terms']
+
 /**
  * Read the access token's expiry from the Supabase auth cookie without a
  * network call. Returns null when there is no session cookie or it can't be
@@ -46,6 +48,12 @@ export async function updateSession(request: NextRequest) {
   // verifySession(). Without this, the cookie-only getUser() below sees no
   // user and short-circuits /api/* calls with a 401 before they're handled.
   if (request.headers.get('Authorization')?.toLowerCase().startsWith('bearer ')) {
+    return NextResponse.next({ request })
+  }
+
+  // Public legal pages must load for everyone, signed in or not — Google's
+  // OAuth consent screen links to them and reviewers aren't logged in.
+  if (PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next({ request })
   }
 
