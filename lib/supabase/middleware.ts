@@ -8,6 +8,16 @@ const REFRESH_MARGIN_S = 5 * 60
 
 const PUBLIC_PATHS = ['/privacy', '/terms']
 
+// @supabase/ssr names the session cookie `sb-<project-ref>-auth-token`, where
+// the ref is the first label of the project hostname. Match ONLY the current
+// project's cookie: a leftover cookie from a previous Supabase project would
+// otherwise look like a live session here, while the server (which can't read
+// it) sends the user back to /login, which bounces to /dashboard — a redirect
+// loop.
+const AUTH_COOKIE_RE = new RegExp(
+  `^sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]}-auth-token(\\.\\d+)?$`
+)
+
 /**
  * Read the access token's expiry from the Supabase auth cookie without a
  * network call. Returns null when there is no session cookie or it can't be
@@ -17,7 +27,7 @@ const PUBLIC_PATHS = ['/privacy', '/terms']
 function sessionExpiresAt(request: NextRequest): number | null {
   const chunks = request.cookies
     .getAll()
-    .filter((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
+    .filter((c) => AUTH_COOKIE_RE.test(c.name))
   if (chunks.length === 0) return null
 
   const value = chunks
