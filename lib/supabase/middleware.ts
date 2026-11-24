@@ -6,6 +6,18 @@ import { NextResponse, type NextRequest } from 'next/server'
 // only place a refreshed token can be persisted back to the browser.
 const REFRESH_MARGIN_S = 5 * 60
 
+const PUBLIC_PATHS = ['/privacy', '/terms']
+
+// @supabase/ssr names the session cookie `sb-<project-ref>-auth-token`, where
+// the ref is the first label of the project hostname. Match ONLY the current
+// project's cookie: a leftover cookie from a previous Supabase project would
+// otherwise look like a live session here, while the server (which can't read
+// it) sends the user back to /login, which bounces to /dashboard — a redirect
+// loop.
+const AUTH_COOKIE_RE = new RegExp(
+  `^sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0]}-auth-token(\\.\\d+)?$`
+)
+
 /**
  * Read the access token's expiry from the Supabase auth cookie without a
  * network call. Returns null when there is no session cookie or it can't be
@@ -15,7 +27,7 @@ const REFRESH_MARGIN_S = 5 * 60
 function sessionExpiresAt(request: NextRequest): number | null {
   const chunks = request.cookies
     .getAll()
-    .filter((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name))
+    .filter((c) => AUTH_COOKIE_RE.test(c.name))
   if (chunks.length === 0) return null
 
   const value = chunks
@@ -46,6 +58,12 @@ export async function updateSession(request: NextRequest) {
   // verifySession(). Without this, the cookie-only getUser() below sees no
   // user and short-circuits /api/* calls with a 401 before they're handled.
   if (request.headers.get('Authorization')?.toLowerCase().startsWith('bearer ')) {
+    return NextResponse.next({ request })
+  }
+
+  // Public legal pages must load for everyone, signed in or not — Google's
+  // OAuth consent screen links to them and reviewers aren't logged in.
+  if (PUBLIC_PATHS.includes(pathname)) {
     return NextResponse.next({ request })
   }
 
